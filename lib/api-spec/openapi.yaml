@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SiteDrop - HTML site hosting platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sites
+    description: Site management
 paths:
   /healthz:
     get:
@@ -24,6 +26,158 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List all sites
+      responses:
+        "200":
+          description: List of sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Site"
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Create a new site by uploading HTML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteInput"
+      responses:
+        "201":
+          description: Site created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "409":
+          description: Site name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sites/generate:
+    post:
+      operationId: generateSite
+      tags: [sites]
+      summary: Generate a site using AI from a text description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteGenerateInput"
+      responses:
+        "201":
+          description: Site generated and created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "409":
+          description: Site name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sites/check-name/{name}:
+    get:
+      operationId: checkSiteName
+      tags: [sites]
+      summary: Check if a site name is available
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Name availability result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NameCheckResult"
+
+  /sites/stats:
+    get:
+      operationId: getSiteStats
+      tags: [sites]
+      summary: Get platform statistics
+      responses:
+        "200":
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteStats"
+
+  /sites/{name}:
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: Get site details by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Site details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "404":
+          description: Site not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSite
+      tags: [sites]
+      summary: Delete a site
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Site deleted
+        "404":
+          description: Site not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +188,82 @@ components:
       required:
         - status
 
+    Site:
+      type: object
+      required: [id, name, title, description, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        htmlContent:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    SiteInput:
+      type: object
+      required: [name, title, htmlContent]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Unique site name (slug, letters/numbers/hyphens only)
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        htmlContent:
+          type: string
+          minLength: 1
+
+    SiteGenerateInput:
+      type: object
+      required: [name, title, description]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+          description: Text description of what the site should look like/contain
+
+    NameCheckResult:
+      type: object
+      required: [available, name]
+      properties:
+        available:
+          type: boolean
+        name:
+          type: string
+
+    SiteStats:
+      type: object
+      required: [totalSites, recentSites]
+      properties:
+        totalSites:
+          type: integer
+        recentSites:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
