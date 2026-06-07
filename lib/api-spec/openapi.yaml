@@ -71,6 +71,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /sites/generate:
+    post:
+      operationId: generateSite
+      tags: [sites]
+      summary: Generate a site from a text description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateSiteInput"
+      responses:
+        "201":
+          description: Site generated and created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "409":
+          description: Site name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /sites/check-name/{name}:
     get:
       operationId: checkSiteName
