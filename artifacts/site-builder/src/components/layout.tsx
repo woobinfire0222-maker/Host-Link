@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { Zap, Plus, Layers, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
+  const { data: health } = useHealthCheck({ query: { queryKey: getHealthCheckQueryKey() } });
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background selection:bg-primary/20">
@@ -46,6 +48,10 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 max-w-6xl flex items-center justify-between text-sm text-muted-foreground">
           <p>SiteDrop &copy; {new Date().getFullYear()}</p>
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 mr-4" title={`API Status: ${health?.status || 'unknown'}`}>
+              <div className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-destructive animate-pulse'}`} />
+              API {health?.status === 'ok' ? 'Online' : 'Offline'}
+            </div>
             <a href="#" className="hover:text-foreground transition-colors flex items-center gap-1" data-testid="link-github">
               <Github className="w-4 h-4" />
               Source
