@@ -44,6 +44,18 @@ export interface SiteStats {
   recentSites: Site[];
 }
 
+export interface GenerateSiteInput {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  name: string;
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 10 */
+  description: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }

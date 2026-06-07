@@ -50,6 +50,23 @@ export const CreateSiteBody = zod.object({
 
 
 /**
+ * @summary Generate a site from a text description
+ */
+export const generateSiteBodyNameMax = 50;
+
+
+export const generateSiteBodyDescriptionMin = 10;
+
+
+
+export const GenerateSiteBody = zod.object({
+  "name": zod.string().min(1).max(generateSiteBodyNameMax),
+  "title": zod.string().min(1),
+  "description": zod.string().min(generateSiteBodyDescriptionMin)
+})
+
+
+/**
  * @summary Check if a site name is available
  */
 export const CheckSiteNameParams = zod.object({

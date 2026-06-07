@@ -7,6 +7,7 @@
  */
 
 export * from './errorResponse';
+export * from './generateSiteInput';
 export * from './healthStatus';
 export * from './nameCheckResult';
 export * from './site';

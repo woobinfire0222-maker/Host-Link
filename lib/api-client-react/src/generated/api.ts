@@ -21,6 +21,7 @@ import type {
 
 import type {
   ErrorResponse,
+  GenerateSiteInput,
   HealthStatus,
   NameCheckResult,
   Site,
@@ -264,6 +265,77 @@ export const useCreateSite = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateSiteMutationOptions(options));
+    }
+
+export const getGenerateSiteUrl = () => {
+
+
+
+
+  return `/api/sites/generate`
+}
+
+/**
+ * @summary Generate a site from a text description
+ */
+export const generateSite = async (generateSiteInput: GenerateSiteInput, options?: RequestInit): Promise<Site> => {
+
+  return customFetch<Site>(getGenerateSiteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateSiteInput,)
+  }
+);}
+
+
+
+
+export const getGenerateSiteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSite>>, TError,{data: BodyType<GenerateSiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateSite>>, TError,{data: BodyType<GenerateSiteInput>}, TContext> => {
+
+const mutationKey = ['generateSite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateSite>>, {data: BodyType<GenerateSiteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateSite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateSiteMutationResult = NonNullable<Awaited<ReturnType<typeof generateSite>>>
+    export type GenerateSiteMutationBody = BodyType<GenerateSiteInput>
+    export type GenerateSiteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate a site from a text description
+ */
+export const useGenerateSite = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSite>>, TError,{data: BodyType<GenerateSiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateSite>>,
+        TError,
+        {data: BodyType<GenerateSiteInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateSiteMutationOptions(options));
     }
 
 export const getCheckSiteNameUrl = (name: string,) => {

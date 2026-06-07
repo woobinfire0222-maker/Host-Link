@@ -3,10 +3,12 @@ import { eq, desc, count } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
 import {
   CreateSiteBody,
+  GenerateSiteBody,
   CheckSiteNameParams,
   GetSiteParams,
   DeleteSiteParams,
 } from "@workspace/api-zod";
+import { generateSiteHtml } from "../lib/site-generator";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -74,6 +76,50 @@ router.post("/sites", async (req, res): Promise<void> => {
       description: description ?? null,
       htmlContent,
     })
+    .returning();
+
+  res.status(201).json({
+    id: site.id,
+    name: site.name,
+    title: site.title,
+    description: site.description,
+    htmlContent: null,
+    createdAt: site.createdAt.toISOString(),
+    updatedAt: site.updatedAt.toISOString(),
+  });
+});
+
+router.post("/sites/generate", async (req, res): Promise<void> => {
+  const parsed = GenerateSiteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { name, title, description } = parsed.data;
+
+  const nameError = validateName(name);
+  if (nameError) {
+    res.status(400).json({ error: nameError });
+    return;
+  }
+
+  const existing = await db
+    .select()
+    .from(sitesTable)
+    .where(eq(sitesTable.name, name))
+    .limit(1);
+
+  if (existing.length > 0) {
+    res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" });
+    return;
+  }
+
+  const htmlContent = generateSiteHtml(title, description);
+
+  const [site] = await db
+    .insert(sitesTable)
+    .values({ name, title, description, htmlContent })
     .returning();
 
   res.status(201).json({
