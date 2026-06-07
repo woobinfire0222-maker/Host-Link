@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Zap, Plus, Layers, Github } from "lucide-react";
+import { Zap, Plus, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 
@@ -27,13 +27,13 @@ export function Layout({ children }: LayoutProps) {
             <Link href="/" data-testid="link-dashboard">
               <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="font-medium">
                 <Layers className="w-4 h-4 mr-2" />
-                Dashboard
+                대시보드
               </Button>
             </Link>
             <Link href="/create" data-testid="link-create">
               <Button size="sm" className="font-medium shadow-sm" variant={location === "/create" ? "secondary" : "default"}>
                 <Plus className="w-4 h-4 mr-1" />
-                New Site
+                새 사이트
               </Button>
             </Link>
           </nav>
@@ -47,15 +47,9 @@ export function Layout({ children }: LayoutProps) {
       <footer className="border-t py-6 mt-auto">
         <div className="container mx-auto px-4 max-w-6xl flex items-center justify-between text-sm text-muted-foreground">
           <p>SiteDrop &copy; {new Date().getFullYear()}</p>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 mr-4" title={`API Status: ${health?.status || 'unknown'}`}>
-              <div className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-destructive animate-pulse'}`} />
-              API {health?.status === 'ok' ? 'Online' : 'Offline'}
-            </div>
-            <a href="#" className="hover:text-foreground transition-colors flex items-center gap-1" data-testid="link-github">
-              <Github className="w-4 h-4" />
-              Source
-            </a>
+          <div className="flex items-center gap-2" title={`API 상태: ${health?.status || '알 수 없음'}`}>
+            <div className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-destructive animate-pulse'}`} />
+            API {health?.status === 'ok' ? '정상' : '오프라인'}
           </div>
         </div>
       </footer>

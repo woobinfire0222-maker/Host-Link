@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Copy, Check, ExternalLink, Globe, Server, Activity, Plus, FileCode2 } from "lucide-react";
 import { useGetSiteStats, useListSites, getListSitesQueryKey, getGetSiteStatsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export default function Home() {
 
   const handleCopyLink = async (name: string, id: number) => {
     const url = `${window.location.origin}/s/${name}`;
-    const success = await copy(url, "Link copied to clipboard");
+    const success = await copy(url, "링크가 복사되었습니다");
     if (success) {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
@@ -31,15 +32,15 @@ export default function Home() {
         
         <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-4">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2">Dashboard</h1>
-            <p className="text-muted-foreground text-lg">Manage your lightning-fast static sites.</p>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-2">대시보드</h1>
+            <p className="text-muted-foreground text-lg">배포된 사이트를 관리하세요.</p>
           </div>
           
           <div className="flex gap-3">
             <Link href="/create" data-testid="button-create-hero">
               <Button size="lg" className="shadow-md shadow-primary/20 group">
                 <Plus className="w-5 h-5 mr-2 group-hover:scale-125 transition-transform" />
-                New Site
+                새 사이트
               </Button>
             </Link>
           </div>
@@ -50,7 +51,7 @@ export default function Home() {
             <CardHeader className="pb-2">
               <CardDescription className="font-medium flex items-center">
                 <Globe className="w-4 h-4 mr-2 text-primary" />
-                Total Sites
+                전체 사이트 수
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -66,12 +67,12 @@ export default function Home() {
             <CardHeader className="pb-2">
               <CardDescription className="font-medium flex items-center">
                 <Server className="w-4 h-4 mr-2 text-primary" />
-                Infrastructure
+                인프라 상태
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold flex items-center">
-                <span className="text-green-500 mr-2">●</span> Operational
+                <span className="text-green-500 mr-2">●</span> 정상 운영중
               </div>
             </CardContent>
           </Card>
@@ -80,7 +81,7 @@ export default function Home() {
             <CardHeader className="pb-2">
               <CardDescription className="font-medium flex items-center">
                 <Activity className="w-4 h-4 mr-2 text-primary" />
-                Network Latency
+                네트워크 지연
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -91,7 +92,7 @@ export default function Home() {
 
         <section className="mt-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold tracking-tight">Your Sites</h2>
+            <h2 className="text-2xl font-bold tracking-tight">내 사이트</h2>
           </div>
 
           {isSitesLoading ? (
@@ -109,14 +110,14 @@ export default function Home() {
               <div className="bg-muted p-4 rounded-full mb-4">
                 <FileCode2 className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-bold mb-2">No sites published yet</h3>
+              <h3 className="text-xl font-bold mb-2">아직 사이트가 없습니다</h3>
               <p className="text-muted-foreground mb-6 max-w-sm">
-                Drop your HTML or let AI generate a brand new site for you in seconds.
+                HTML을 업로드하거나 AI로 새 사이트를 만들어 보세요.
               </p>
               <Link href="/create" data-testid="button-create-empty">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create First Site
+                  첫 사이트 만들기
                 </Button>
               </Link>
             </div>
@@ -134,13 +135,13 @@ export default function Home() {
                       <Badge variant="secondary" className="font-mono text-xs">/{site.name}</Badge>
                     </div>
                     <CardDescription className="truncate">
-                      {site.description || "No description"}
+                      {site.description || "설명 없음"}
                     </CardDescription>
                   </CardHeader>
                   
                   <CardContent className="pb-3 flex-1 flex flex-col justify-end">
                     <div className="text-xs text-muted-foreground mb-4">
-                      Created {formatDistanceToNow(new Date(site.createdAt))} ago
+                      {formatDistanceToNow(new Date(site.createdAt), { addSuffix: true, locale: ko })} 생성됨
                     </div>
                     <div className="bg-muted rounded-md p-2 flex items-center justify-between overflow-hidden">
                       <span className="text-xs font-mono truncate text-muted-foreground select-all w-full pr-2">
@@ -161,11 +162,11 @@ export default function Home() {
                       ) : (
                         <Copy className="w-4 h-4 mr-2" />
                       )}
-                      Copy Link
+                      링크 복사
                     </Button>
                     <Link href={`/sites/${site.name}`} className="flex-1" data-testid={`link-manage-${site.id}`}>
                       <Button variant="outline" className="w-full">
-                        Manage
+                        관리
                         <ExternalLink className="w-4 h-4 ml-2" />
                       </Button>
                     </Link>

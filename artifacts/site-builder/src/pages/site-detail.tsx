@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { ExternalLink, Copy, Check, Trash2, Code2, Monitor, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useGetSite, useDeleteSite, getGetSiteQueryKey, getListSitesQueryKey, getGetSiteStatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,7 +36,7 @@ export default function SiteDetail() {
   const handleCopyLink = async () => {
     if (!site) return;
     const url = `${window.location.origin}/s/${site.name}`;
-    const success = await copy(url, "Live link copied");
+    const success = await copy(url, "라이브 링크가 복사되었습니다");
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -46,15 +47,15 @@ export default function SiteDetail() {
     if (!site) return;
     deleteSite.mutate({ name: site.name }, {
       onSuccess: () => {
-        toast({ title: "Site deleted successfully" });
+        toast({ title: "사이트가 삭제되었습니다" });
         queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetSiteStatsQueryKey() });
         setLocation("/");
       },
       onError: (error) => {
         toast({
-          title: "Delete failed",
-          description: error.error || "An unknown error occurred",
+          title: "삭제 실패",
+          description: error.error || "알 수 없는 오류가 발생했습니다",
           variant: "destructive"
         });
       }
@@ -68,11 +69,11 @@ export default function SiteDetail() {
           <div className="bg-destructive/10 p-4 rounded-full mb-4">
             <AlertTriangle className="w-8 h-8 text-destructive" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Site Not Found</h2>
-          <p className="text-muted-foreground mb-6">The site "{name}" does not exist or has been deleted.</p>
+          <h2 className="text-2xl font-bold mb-2">사이트를 찾을 수 없습니다</h2>
+          <p className="text-muted-foreground mb-6">"{name}" 사이트가 존재하지 않거나 삭제되었습니다.</p>
           <Button onClick={() => setLocation("/")} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            대시보드로 돌아가기
           </Button>
         </div>
       </Layout>
@@ -102,7 +103,7 @@ export default function SiteDetail() {
                   </span>
                   {site?.createdAt && (
                     <span className="hidden sm:inline">
-                      Created {format(new Date(site.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                      {format(new Date(site.createdAt), "yyyy년 M월 d일 HH:mm", { locale: ko })} 생성
                     </span>
                   )}
                 </div>
@@ -129,7 +130,7 @@ export default function SiteDetail() {
                   data-testid="button-copy-link"
                 >
                   {copied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
-                  Copy Link
+                  링크 복사
                 </Button>
                 
                 <Button 
@@ -139,7 +140,7 @@ export default function SiteDetail() {
                   data-testid="button-visit-live"
                 >
                   <a href={`/s/${site?.name}`} target="_blank" rel="noopener noreferrer">
-                    Visit Live
+                    바로 열기
                     <ExternalLink className="w-4 h-4 ml-2" />
                   </a>
                 </Button>
@@ -152,19 +153,19 @@ export default function SiteDetail() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete the site <strong>{site?.name}</strong>. This action cannot be undone. The URL will become available for others to use.
+                        <strong>{site?.name}</strong> 사이트가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없으며, 해당 URL은 다시 사용 가능해집니다.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={handleDelete}
                         className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                         disabled={deleteSite.isPending}
                       >
-                        {deleteSite.isPending ? "Deleting..." : "Delete Site"}
+                        {deleteSite.isPending ? "삭제 중..." : "사이트 삭제"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -180,11 +181,11 @@ export default function SiteDetail() {
               <TabsList className="h-9">
                 <TabsTrigger value="preview" className="text-sm px-4 data-[state=active]:bg-background" data-testid="tab-preview">
                   <Monitor className="w-4 h-4 mr-2" />
-                  Preview
+                  미리보기
                 </TabsTrigger>
                 <TabsTrigger value="code" className="text-sm px-4 data-[state=active]:bg-background" data-testid="tab-code">
                   <Code2 className="w-4 h-4 mr-2" />
-                  Source Code
+                  소스 코드
                 </TabsTrigger>
               </TabsList>
               
@@ -205,7 +206,7 @@ export default function SiteDetail() {
                 <iframe 
                   src={`/s/${site?.name}`} 
                   className="w-full h-full absolute inset-0 border-0 bg-white"
-                  title="Site Preview"
+                  title="사이트 미리보기"
                   sandbox="allow-scripts allow-same-origin"
                   data-testid="iframe-preview"
                 />
@@ -221,7 +222,7 @@ export default function SiteDetail() {
                 </div>
               ) : (
                 <div className="flex-1 overflow-auto p-4 text-sm font-mono text-gray-300 whitespace-pre-wrap break-all leading-relaxed">
-                  {site?.htmlContent || "No content"}
+                  {site?.htmlContent || "내용 없음"}
                 </div>
               )}
             </TabsContent>

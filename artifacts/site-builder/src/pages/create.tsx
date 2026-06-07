@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,21 +19,21 @@ const siteNameRegex = /^[a-z0-9-]+$/;
 
 const uploadSchema = z.object({
   name: z.string()
-    .min(1, "Name is required")
-    .max(50, "Name must be less than 50 characters")
-    .regex(siteNameRegex, "Only lowercase letters, numbers, and hyphens allowed"),
-  title: z.string().min(1, "Title is required"),
+    .min(1, "사이트 이름을 입력해주세요")
+    .max(50, "50자 이하로 입력해주세요")
+    .regex(siteNameRegex, "영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다"),
+  title: z.string().min(1, "제목을 입력해주세요"),
   description: z.string().optional(),
-  htmlContent: z.string().min(1, "HTML content is required")
+  htmlContent: z.string().min(1, "HTML 내용을 입력해주세요")
 });
 
 const generateSchema = z.object({
   name: z.string()
-    .min(1, "Name is required")
-    .max(50, "Name must be less than 50 characters")
-    .regex(siteNameRegex, "Only lowercase letters, numbers, and hyphens allowed"),
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(10, "Please provide more details for AI generation (at least 10 chars)")
+    .min(1, "사이트 이름을 입력해주세요")
+    .max(50, "50자 이하로 입력해주세요")
+    .regex(siteNameRegex, "영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다"),
+  title: z.string().min(1, "제목을 입력해주세요"),
+  description: z.string().min(10, "AI 생성을 위해 좀 더 자세히 설명해주세요 (10자 이상)")
 });
 
 export default function CreateSite() {
@@ -66,19 +66,19 @@ export default function CreateSite() {
 
   const onUploadSubmit = async (values: z.infer<typeof uploadSchema>) => {
     if (nameCheck && !nameCheck.available) {
-      uploadForm.setError("name", { message: "Name is already taken" });
+      uploadForm.setError("name", { message: "이미 사용 중인 이름입니다" });
       return;
     }
     
     createSite.mutate({ data: values }, {
       onSuccess: (site) => {
-        toast({ title: "Site published successfully!" });
+        toast({ title: "사이트가 성공적으로 배포되었습니다!" });
         setLocation(`/sites/${site.name}`);
       },
       onError: (error) => {
         toast({
-          title: "Failed to publish",
-          description: error.error || "An unknown error occurred",
+          title: "배포 실패",
+          description: error.error || "알 수 없는 오류가 발생했습니다",
           variant: "destructive"
         });
       }
@@ -87,19 +87,19 @@ export default function CreateSite() {
 
   const onGenerateSubmit = async (values: z.infer<typeof generateSchema>) => {
     if (nameCheck && !nameCheck.available) {
-      generateForm.setError("name", { message: "Name is already taken" });
+      generateForm.setError("name", { message: "이미 사용 중인 이름입니다" });
       return;
     }
 
     generateSite.mutate({ data: values }, {
       onSuccess: (site) => {
-        toast({ title: "Site generated successfully!" });
+        toast({ title: "AI 사이트 생성 완료!" });
         setLocation(`/sites/${site.name}`);
       },
       onError: (error) => {
         toast({
-          title: "Generation failed",
-          description: error.error || "An unknown error occurred",
+          title: "생성 실패",
+          description: error.error || "알 수 없는 오류가 발생했습니다",
           variant: "destructive"
         });
       }
@@ -112,7 +112,7 @@ export default function CreateSite() {
       name="name"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>URL Slug</FormLabel>
+          <FormLabel>URL 슬러그</FormLabel>
           <FormControl>
             <div className="relative flex items-center">
               <span className="absolute left-3 text-muted-foreground text-sm font-mono">/s/</span>
@@ -135,12 +135,12 @@ export default function CreateSite() {
             </div>
           </FormControl>
           <FormDescription>
-            Only lowercase letters, numbers, and hyphens.
+            영문 소문자, 숫자, 하이픈만 사용 가능합니다.
             {nameCheck?.available === false && (
-              <span className="text-destructive font-medium ml-1">This name is unavailable.</span>
+              <span className="text-destructive font-medium ml-1">이미 사용 중인 이름입니다.</span>
             )}
             {nameCheck?.available === true && (
-              <span className="text-green-600 font-medium ml-1 dark:text-green-400">Name is available!</span>
+              <span className="text-green-600 font-medium ml-1 dark:text-green-400">사용 가능한 이름입니다!</span>
             )}
           </FormDescription>
           <FormMessage />
@@ -153,19 +153,19 @@ export default function CreateSite() {
     <Layout>
       <div className="max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="mb-8">
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2">Create New Site</h1>
-          <p className="text-muted-foreground text-lg">Upload your own HTML or let AI build it for you.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2">새 사이트 만들기</h1>
+          <p className="text-muted-foreground text-lg">HTML을 직접 업로드하거나 AI로 생성해보세요.</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-14 mb-8">
             <TabsTrigger value="upload" className="text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md" data-testid="tab-upload">
               <UploadCloud className="w-4 h-4 mr-2" />
-              Upload HTML
+              HTML 업로드
             </TabsTrigger>
             <TabsTrigger value="generate" className="text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md" data-testid="tab-generate">
               <Sparkles className="w-4 h-4 mr-2" />
-              Generate with AI
+              AI로 생성
             </TabsTrigger>
           </TabsList>
 
@@ -181,11 +181,11 @@ export default function CreateSite() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel>제목</FormLabel>
                           <FormControl>
-                            <Input placeholder="My Awesome Site" {...field} data-testid="input-site-title" />
+                            <Input placeholder="내 멋진 사이트" {...field} data-testid="input-site-title" />
                           </FormControl>
-                          <FormDescription>Displayed in browser tab.</FormDescription>
+                          <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -197,9 +197,9 @@ export default function CreateSite() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormLabel>설명 (선택)</FormLabel>
                         <FormControl>
-                          <Input placeholder="A brief description for internal tracking" {...field} data-testid="input-site-desc" />
+                          <Input placeholder="사이트에 대한 간단한 설명" {...field} data-testid="input-site-desc" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -211,10 +211,10 @@ export default function CreateSite() {
                     name="htmlContent"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>HTML Content</FormLabel>
+                        <FormLabel>HTML 내용</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="<!DOCTYPE html>&#10;<html>&#10;  <body>&#10;    <h1>Hello World</h1>&#10;  </body>&#10;</html>" 
+                            placeholder={"<!DOCTYPE html>\n<html>\n  <body>\n    <h1>안녕하세요!</h1>\n  </body>\n</html>"} 
                             className="font-mono h-[300px] bg-muted/50 border-input"
                             {...field} 
                             data-testid="input-site-html"
@@ -230,18 +230,18 @@ export default function CreateSite() {
                       type="submit" 
                       size="lg" 
                       className="w-full sm:w-auto" 
-                      disabled={createSite.isPending || (nameCheck && !nameCheck.available)}
+                      disabled={createSite.isPending || (nameCheck != null && !nameCheck.available)}
                       data-testid="button-submit-upload"
                     >
                       {createSite.isPending ? (
                         <>
                           <div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
-                          Publishing...
+                          배포 중...
                         </>
                       ) : (
                         <>
                           <UploadCloud className="w-4 h-4 mr-2" />
-                          Publish Site
+                          사이트 배포
                         </>
                       )}
                     </Button>
@@ -258,9 +258,9 @@ export default function CreateSite() {
                   
                   <Alert className="bg-primary/5 border-primary/20 text-primary-foreground mb-6">
                     <Sparkles className="w-4 h-4 text-primary" />
-                    <AlertTitle className="text-foreground font-semibold">AI Powered</AlertTitle>
+                    <AlertTitle className="text-foreground font-semibold">AI 사이트 생성</AlertTitle>
                     <AlertDescription className="text-muted-foreground text-sm mt-1">
-                      Describe what you want, and we'll generate a single-page HTML layout with Tailwind CSS.
+                      원하는 사이트를 설명하면 AI가 Tailwind CSS로 완성된 HTML 페이지를 만들어 드립니다.
                     </AlertDescription>
                   </Alert>
 
@@ -272,9 +272,9 @@ export default function CreateSite() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel>제목</FormLabel>
                           <FormControl>
-                            <Input placeholder="Yuna's Portfolio" {...field} data-testid="input-site-title-ai" />
+                            <Input placeholder="유나의 포트폴리오" {...field} data-testid="input-site-title-ai" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -287,16 +287,16 @@ export default function CreateSite() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prompt</FormLabel>
+                        <FormLabel>프롬프트</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="A clean, minimalist portfolio for a photographer named Yuna. Include a hero section with a headline, a grid of placeholder images, and a contact footer. Use dark mode and elegant typography." 
+                            placeholder="사진작가 유나의 포트폴리오 사이트. 다크모드, 히어로 섹션, 사진 갤러리 그리드, 연락처 폼 포함. 고급스럽고 세련된 느낌으로." 
                             className="h-[200px] resize-y text-base"
                             {...field} 
                             data-testid="input-site-prompt"
                           />
                         </FormControl>
-                        <FormDescription>Be as descriptive as possible for best results.</FormDescription>
+                        <FormDescription>더 자세히 설명할수록 더 좋은 결과가 나옵니다.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -307,19 +307,19 @@ export default function CreateSite() {
                       type="submit" 
                       size="lg" 
                       className="w-full sm:w-auto overflow-hidden relative group" 
-                      disabled={generateSite.isPending || (nameCheck && !nameCheck.available)}
+                      disabled={generateSite.isPending || (nameCheck != null && !nameCheck.available)}
                       data-testid="button-submit-generate"
                     >
                       {generateSite.isPending ? (
                         <>
                           <div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
-                          Generating... (This may take a minute)
+                          AI 생성 중... (잠시 기다려 주세요)
                         </>
                       ) : (
                         <>
                           <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out z-10" />
                           <Sparkles className="w-4 h-4 mr-2 z-20 relative" />
-                          <span className="z-20 relative">Generate & Publish</span>
+                          <span className="z-20 relative">AI로 생성 및 배포</span>
                         </>
                       )}
                     </Button>
