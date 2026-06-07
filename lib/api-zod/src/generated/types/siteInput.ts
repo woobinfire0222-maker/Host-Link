@@ -8,7 +8,6 @@
 
 export interface SiteInput {
   /**
-     * Unique site name (slug, letters/numbers/hyphens only)
      * @minLength 1
      * @maxLength 50
      */

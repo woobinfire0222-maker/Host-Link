@@ -71,37 +71,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /sites/generate:
-    post:
-      operationId: generateSite
-      tags: [sites]
-      summary: Generate a site using AI from a text description
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SiteGenerateInput"
-      responses:
-        "201":
-          description: Site generated and created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Site"
-        "409":
-          description: Site name already taken
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "400":
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /sites/check-name/{name}:
     get:
       operationId: checkSiteName
@@ -215,7 +184,6 @@ components:
           type: string
           minLength: 1
           maxLength: 50
-          description: Unique site name (slug, letters/numbers/hyphens only)
         title:
           type: string
           minLength: 1
@@ -224,22 +192,6 @@ components:
         htmlContent:
           type: string
           minLength: 1
-
-    SiteGenerateInput:
-      type: object
-      required: [name, title, description]
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 50
-        title:
-          type: string
-          minLength: 1
-        description:
-          type: string
-          minLength: 1
-          description: Text description of what the site should look like/contain
 
     NameCheckResult:
       type: object

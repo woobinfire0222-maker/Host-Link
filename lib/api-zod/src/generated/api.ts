@@ -42,26 +42,10 @@ export const createSiteBodyNameMax = 50;
 
 
 export const CreateSiteBody = zod.object({
-  "name": zod.string().min(1).max(createSiteBodyNameMax).describe('Unique site name (slug, letters\/numbers\/hyphens only)'),
+  "name": zod.string().min(1).max(createSiteBodyNameMax),
   "title": zod.string().min(1),
   "description": zod.string().optional(),
   "htmlContent": zod.string().min(1)
-})
-
-
-/**
- * @summary Generate a site using AI from a text description
- */
-export const generateSiteBodyNameMax = 50;
-
-
-
-
-
-export const GenerateSiteBody = zod.object({
-  "name": zod.string().min(1).max(generateSiteBodyNameMax),
-  "title": zod.string().min(1),
-  "description": zod.string().min(1).describe('Text description of what the site should look like\/contain')
 })
 
 

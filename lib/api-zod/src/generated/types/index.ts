@@ -10,6 +10,5 @@ export * from './errorResponse';
 export * from './healthStatus';
 export * from './nameCheckResult';
 export * from './site';
-export * from './siteGenerateInput';
 export * from './siteInput';
 export * from './siteStats';

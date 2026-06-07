@@ -23,7 +23,6 @@ export interface Site {
 
 export interface SiteInput {
   /**
-     * Unique site name (slug, letters/numbers/hyphens only)
      * @minLength 1
      * @maxLength 50
      */
@@ -33,21 +32,6 @@ export interface SiteInput {
   description?: string;
   /** @minLength 1 */
   htmlContent: string;
-}
-
-export interface SiteGenerateInput {
-  /**
-     * @minLength 1
-     * @maxLength 50
-     */
-  name: string;
-  /** @minLength 1 */
-  title: string;
-  /**
-     * Text description of what the site should look like/contain
-     * @minLength 1
-     */
-  description: string;
 }
 
 export interface NameCheckResult {
