@@ -52,10 +52,11 @@ export default function SiteDetail() {
         queryClient.invalidateQueries({ queryKey: getGetSiteStatsQueryKey() });
         setLocation("/");
       },
-      onError: (error) => {
+      onError: (error: unknown) => {
+        const msg = (error as { error?: string })?.error;
         toast({
           title: "삭제 실패",
-          description: error.error || "알 수 없는 오류가 발생했습니다",
+          description: msg || "알 수 없는 오류가 발생했습니다",
           variant: "destructive"
         });
       }

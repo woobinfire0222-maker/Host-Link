@@ -74,8 +74,9 @@ export default function CreateSite() {
         toast({ title: "사이트가 성공적으로 배포되었습니다!" });
         setLocation(`/sites/${site.name}`);
       },
-      onError: (error) => {
-        toast({ title: "배포 실패", description: error.error || "알 수 없는 오류", variant: "destructive" });
+      onError: (error: unknown) => {
+        const msg = (error as { error?: string })?.error;
+        toast({ title: "배포 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
       }
     });
   };
@@ -90,8 +91,9 @@ export default function CreateSite() {
         toast({ title: "사이트가 생성되었습니다!" });
         setLocation(`/sites/${site.name}`);
       },
-      onError: (error) => {
-        toast({ title: "생성 실패", description: error.error || "알 수 없는 오류", variant: "destructive" });
+      onError: (error: unknown) => {
+        const msg = (error as { error?: string })?.error;
+        toast({ title: "생성 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
       }
     });
   };

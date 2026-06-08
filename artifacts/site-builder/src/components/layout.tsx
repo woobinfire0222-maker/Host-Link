@@ -1,16 +1,25 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Zap, Plus, Layers } from "lucide-react";
+import { Zap, Plus, Layers, LogOut, LogIn, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { data: health } = useHealthCheck({ query: { queryKey: getHealthCheckQueryKey() } });
+  const { user, isLoading, logout } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background selection:bg-primary/20">
@@ -22,20 +31,59 @@ export function Layout({ children }: LayoutProps) {
             </div>
             <span className="font-bold text-lg tracking-tight">SiteDrop</span>
           </Link>
-          
-          <nav className="flex items-center gap-4">
-            <Link href="/" data-testid="link-dashboard">
-              <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="font-medium">
-                <Layers className="w-4 h-4 mr-2" />
-                대시보드
-              </Button>
-            </Link>
-            <Link href="/create" data-testid="link-create">
-              <Button size="sm" className="font-medium shadow-sm" variant={location === "/create" ? "secondary" : "default"}>
-                <Plus className="w-4 h-4 mr-1" />
-                새 사이트
-              </Button>
-            </Link>
+
+          <nav className="flex items-center gap-2">
+            {user && (
+              <>
+                <Link href="/" data-testid="link-dashboard">
+                  <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="font-medium">
+                    <Layers className="w-4 h-4 mr-2" />
+                    대시보드
+                  </Button>
+                </Link>
+                <Link href="/create" data-testid="link-create">
+                  <Button size="sm" className="font-medium shadow-sm" variant={location === "/create" ? "secondary" : "default"}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    새 사이트
+                  </Button>
+                </Link>
+              </>
+            )}
+
+            {!isLoading && (
+              user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="font-medium gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {user.username[0].toUpperCase()}
+                      </div>
+                      {user.username}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <div className="px-3 py-2 text-xs text-muted-foreground">{user.email}</div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setLocation("/admin")} className="cursor-pointer">
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      관리자 모드
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      로그아웃
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link href="/login">
+                  <Button size="sm" variant="outline" className="font-medium">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    로그인
+                  </Button>
+                </Link>
+              )
+            )}
           </nav>
         </div>
       </header>

@@ -6,12 +6,14 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import CreateSite from "@/pages/create";
 import SiteDetail from "@/pages/site-detail";
+import Login from "@/pages/login";
+import Admin from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
     }
   }
 });
@@ -20,6 +22,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/admin" component={Admin} />
       <Route path="/create" component={CreateSite} />
       <Route path="/sites/:name" component={SiteDetail} />
       <Route component={NotFound} />

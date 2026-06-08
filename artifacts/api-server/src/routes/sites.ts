@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, and, isNull } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
 import {
   CreateSiteBody,
@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { generateSiteHtml } from "../lib/site-generator";
 import { logger } from "../lib/logger";
+import "./session-types";
 
 const router: IRouter = Router();
 
@@ -18,17 +19,15 @@ const VALID_NAME_RE = /^[a-z0-9-]+$/;
 function validateName(name: string): string | null {
   if (!name || name.length < 1) return "사이트 이름을 입력해주세요";
   if (name.length > 50) return "사이트 이름은 50자 이하여야 합니다";
-  if (!VALID_NAME_RE.test(name))
-    return "영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다";
+  if (!VALID_NAME_RE.test(name)) return "영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다";
   return null;
 }
 
-router.get("/sites", async (_req, res): Promise<void> => {
-  const sites = await db
-    .select()
-    .from(sitesTable)
-    .orderBy(desc(sitesTable.createdAt));
+router.get("/sites", async (req, res): Promise<void> => {
+  const userId = req.session?.userId ?? null;
+  const where = userId != null ? eq(sitesTable.userId, userId) : isNull(sitesTable.userId);
 
+  const sites = await db.select().from(sitesTable).where(where).orderBy(desc(sitesTable.createdAt));
   res.json(
     sites.map((s) => ({
       id: s.id,
@@ -43,6 +42,11 @@ router.get("/sites", async (_req, res): Promise<void> => {
 });
 
 router.post("/sites", async (req, res): Promise<void> => {
+  if (!req.session?.userId) {
+    res.status(401).json({ error: "로그인이 필요합니다" });
+    return;
+  }
+
   const parsed = CreateSiteBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -50,184 +54,112 @@ router.post("/sites", async (req, res): Promise<void> => {
   }
 
   const { name, title, description, htmlContent } = parsed.data;
-
   const nameError = validateName(name);
-  if (nameError) {
-    res.status(400).json({ error: nameError });
-    return;
-  }
+  if (nameError) { res.status(400).json({ error: nameError }); return; }
 
-  const existing = await db
-    .select()
-    .from(sitesTable)
-    .where(eq(sitesTable.name, name))
-    .limit(1);
-
-  if (existing.length > 0) {
-    res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" });
-    return;
-  }
+  const existing = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
+  if (existing.length > 0) { res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" }); return; }
 
   const [site] = await db
     .insert(sitesTable)
-    .values({
-      name,
-      title,
-      description: description ?? null,
-      htmlContent,
-    })
+    .values({ name, title, description: description ?? null, htmlContent, userId: req.session.userId })
     .returning();
 
   res.status(201).json({
-    id: site.id,
-    name: site.name,
-    title: site.title,
-    description: site.description,
-    htmlContent: null,
-    createdAt: site.createdAt.toISOString(),
-    updatedAt: site.updatedAt.toISOString(),
+    id: site.id, name: site.name, title: site.title, description: site.description,
+    htmlContent: null, createdAt: site.createdAt.toISOString(), updatedAt: site.updatedAt.toISOString(),
   });
 });
 
 router.post("/sites/generate", async (req, res): Promise<void> => {
-  const parsed = GenerateSiteBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+  if (!req.session?.userId) {
+    res.status(401).json({ error: "로그인이 필요합니다" });
     return;
   }
+
+  const parsed = GenerateSiteBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const { name, title, description } = parsed.data;
-
   const nameError = validateName(name);
-  if (nameError) {
-    res.status(400).json({ error: nameError });
-    return;
-  }
+  if (nameError) { res.status(400).json({ error: nameError }); return; }
 
-  const existing = await db
-    .select()
-    .from(sitesTable)
-    .where(eq(sitesTable.name, name))
-    .limit(1);
-
-  if (existing.length > 0) {
-    res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" });
-    return;
-  }
+  const existing = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
+  if (existing.length > 0) { res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" }); return; }
 
   const htmlContent = generateSiteHtml(title, description);
-
   const [site] = await db
     .insert(sitesTable)
-    .values({ name, title, description, htmlContent })
+    .values({ name, title, description, htmlContent, userId: req.session.userId })
     .returning();
 
   res.status(201).json({
-    id: site.id,
-    name: site.name,
-    title: site.title,
-    description: site.description,
-    htmlContent: null,
-    createdAt: site.createdAt.toISOString(),
-    updatedAt: site.updatedAt.toISOString(),
+    id: site.id, name: site.name, title: site.title, description: site.description,
+    htmlContent: null, createdAt: site.createdAt.toISOString(), updatedAt: site.updatedAt.toISOString(),
   });
 });
 
 router.get("/sites/check-name/:name", async (req, res): Promise<void> => {
   const params = CheckSiteNameParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   const { name } = params.data;
-
   const nameError = validateName(name);
-  if (nameError) {
-    res.json({ available: false, name });
-    return;
-  }
+  if (nameError) { res.json({ available: false, name }); return; }
 
-  const existing = await db
-    .select()
-    .from(sitesTable)
-    .where(eq(sitesTable.name, name))
-    .limit(1);
-
+  const existing = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
   res.json({ available: existing.length === 0, name });
 });
 
-router.get("/sites/stats", async (_req, res): Promise<void> => {
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(sitesTable);
+router.get("/sites/stats", async (req, res): Promise<void> => {
+  const userId = req.session?.userId ?? null;
+  const where = userId != null ? eq(sitesTable.userId, userId) : isNull(sitesTable.userId);
 
-  const recentSites = await db
-    .select()
-    .from(sitesTable)
-    .orderBy(desc(sitesTable.createdAt))
-    .limit(5);
+  const [{ total }] = await db.select({ total: count() }).from(sitesTable).where(where);
+  const recentSites = await db.select().from(sitesTable).where(where).orderBy(desc(sitesTable.createdAt)).limit(5);
 
   res.json({
     totalSites: total,
     recentSites: recentSites.map((s) => ({
-      id: s.id,
-      name: s.name,
-      title: s.title,
-      description: s.description,
-      htmlContent: null,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
+      id: s.id, name: s.name, title: s.title, description: s.description,
+      htmlContent: null, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt.toISOString(),
     })),
   });
 });
 
 router.get("/sites/:name", async (req, res): Promise<void> => {
   const params = GetSiteParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const [site] = await db
-    .select()
-    .from(sitesTable)
-    .where(eq(sitesTable.name, params.data.name))
-    .limit(1);
+  const [site] = await db.select().from(sitesTable).where(eq(sitesTable.name, params.data.name)).limit(1);
+  if (!site) { res.status(404).json({ error: "사이트를 찾을 수 없습니다" }); return; }
 
-  if (!site) {
-    res.status(404).json({ error: "사이트를 찾을 수 없습니다" });
+  // Only owner can see site details
+  if (site.userId != null && req.session?.userId !== site.userId) {
+    res.status(403).json({ error: "접근 권한이 없습니다" });
     return;
   }
 
   res.json({
-    id: site.id,
-    name: site.name,
-    title: site.title,
-    description: site.description,
-    htmlContent: site.htmlContent,
-    createdAt: site.createdAt.toISOString(),
-    updatedAt: site.updatedAt.toISOString(),
+    id: site.id, name: site.name, title: site.title, description: site.description,
+    htmlContent: site.htmlContent, createdAt: site.createdAt.toISOString(), updatedAt: site.updatedAt.toISOString(),
   });
 });
 
 router.delete("/sites/:name", async (req, res): Promise<void> => {
+  if (!req.session?.userId) {
+    res.status(401).json({ error: "로그인이 필요합니다" });
+    return;
+  }
+
   const params = DeleteSiteParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const [deleted] = await db
-    .delete(sitesTable)
-    .where(eq(sitesTable.name, params.data.name))
-    .returning();
+  const [site] = await db.select().from(sitesTable).where(eq(sitesTable.name, params.data.name)).limit(1);
+  if (!site) { res.status(404).json({ error: "사이트를 찾을 수 없습니다" }); return; }
+  if (site.userId !== req.session.userId) { res.status(403).json({ error: "접근 권한이 없습니다" }); return; }
 
-  if (!deleted) {
-    res.status(404).json({ error: "사이트를 찾을 수 없습니다" });
-    return;
-  }
-
+  await db.delete(sitesTable).where(eq(sitesTable.name, params.data.name));
   res.sendStatus(204);
 });
 
@@ -237,14 +169,8 @@ export function createSiteViewRouter(): IRouter {
   const viewRouter: IRouter = Router();
 
   viewRouter.get("/s/:name", async (req, res): Promise<void> => {
-    const raw = Array.isArray(req.params.name) ? req.params.name[0] : req.params.name;
-    const name = raw;
-
-    const [site] = await db
-      .select()
-      .from(sitesTable)
-      .where(eq(sitesTable.name, name))
-      .limit(1);
+    const name = Array.isArray(req.params.name) ? req.params.name[0] : req.params.name;
+    const [site] = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
 
     if (!site) {
       res.status(404).send(`<!DOCTYPE html><html><head><title>404 - 사이트 없음</title>
