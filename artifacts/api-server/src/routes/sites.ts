@@ -255,8 +255,13 @@ export function createSiteViewRouter(): IRouter {
       return;
     }
 
+    const hideBadge = `<style>#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge]{display:none!important;visibility:hidden!important;}</style>`;
+    const html = site.htmlContent?.includes("</body>")
+      ? site.htmlContent.replace("</body>", `${hideBadge}</body>`)
+      : (site.htmlContent ?? "") + hideBadge;
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(site.htmlContent);
+    res.send(html);
   });
 
   return viewRouter;
