@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Layout } from "@/components/layout";
 import { useDebounce } from "@/lib/use-debounce";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const siteNameRegex = /^[a-z0-9-]+$/;
 
@@ -39,6 +41,7 @@ const generateSchema = z.object({
 export default function CreateSite() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"upload" | "generate">("upload");
 
   const uploadForm = useForm<z.infer<typeof uploadSchema>>({
@@ -56,13 +59,27 @@ export default function CreateSite() {
 
   const { data: nameCheck, isLoading: isCheckingName } = useCheckSiteName(debouncedName, {
     query: {
-      enabled: debouncedName.length > 0 && siteNameRegex.test(debouncedName),
+      enabled: !!user && debouncedName.length > 0 && siteNameRegex.test(debouncedName),
       queryKey: getCheckSiteNameQueryKey(debouncedName)
     }
   });
 
   const createSite = useCreateSite();
   const generateSite = useGenerateSite();
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) setLocation("/login");
+  }, [user, isAuthLoading, setLocation]);
+
+  if (isAuthLoading || !user) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   const onUploadSubmit = async (values: z.infer<typeof uploadSchema>) => {
     if (nameCheck && !nameCheck.available) {

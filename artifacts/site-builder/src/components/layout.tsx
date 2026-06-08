@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Zap, Plus, Layers, LogOut, LogIn, ShieldCheck, User } from "lucide-react";
+import { Zap, Plus, Layers, LogOut, LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -94,7 +94,15 @@ export function Layout({ children }: LayoutProps) {
 
       <footer className="border-t py-6 mt-auto">
         <div className="container mx-auto px-4 max-w-6xl flex items-center justify-between text-sm text-muted-foreground">
-          <p>SiteDrop &copy; {new Date().getFullYear()}</p>
+          <div className="flex items-center gap-4">
+            <p>SiteDrop &copy; {new Date().getFullYear()}</p>
+            <Link href="/admin">
+              <button className="flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                <ShieldCheck className="w-3 h-3" />
+                관리자
+              </button>
+            </Link>
+          </div>
           <div className="flex items-center gap-2" title={`API 상태: ${health?.status || '알 수 없음'}`}>
             <div className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-destructive animate-pulse'}`} />
             API {health?.status === 'ok' ? '정상' : '오프라인'}

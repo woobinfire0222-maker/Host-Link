@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Copy, Check, ExternalLink, Globe, Server, Activity, Plus, FileCode2 } from "lucide-react";
@@ -10,12 +10,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Layout } from "@/components/layout";
 import { useCopy } from "@/hooks/use-copy";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
-  const { data: stats, isLoading: isStatsLoading } = useGetSiteStats({ query: { queryKey: getGetSiteStatsQueryKey() } });
-  const { data: sites, isLoading: isSitesLoading } = useListSites({ query: { queryKey: getListSitesQueryKey() } });
+  const [, setLocation] = useLocation();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { data: stats, isLoading: isStatsLoading } = useGetSiteStats({ query: { queryKey: getGetSiteStatsQueryKey(), enabled: !!user } });
+  const { data: sites, isLoading: isSitesLoading } = useListSites({ query: { queryKey: getListSitesQueryKey(), enabled: !!user } });
   const { copy } = useCopy();
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) setLocation("/login");
+  }, [user, isAuthLoading, setLocation]);
+
+  if (isAuthLoading || !user) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   const handleCopyLink = async (name: string, id: number) => {
     const url = `${window.location.origin}/s/${name}`;
