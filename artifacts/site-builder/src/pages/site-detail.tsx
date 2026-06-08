@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ExternalLink, Copy, Check, Trash2, Code2, Monitor, ArrowLeft, AlertTriangle } from "lucide-react";
+import { ExternalLink, Copy, Check, Trash2, Code2, Monitor, ArrowLeft, AlertTriangle, Database } from "lucide-react";
 import { useGetSite, useDeleteSite, getGetSiteQueryKey, getListSitesQueryKey, getGetSiteStatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function SiteDetail() {
   const { toast } = useToast();
   const { copy } = useCopy();
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [activeTab, setActiveTab] = useState<"preview" | "code" | "db">("preview");
 
   const { data: site, isLoading, isError } = useGetSite(name || "", { 
     query: { 
@@ -187,8 +187,12 @@ export default function SiteDetail() {
                   <Code2 className="w-4 h-4 mr-2" />
                   소스 코드
                 </TabsTrigger>
+                <TabsTrigger value="db" className="text-sm px-4 data-[state=active]:bg-background" data-testid="tab-db">
+                  <Database className="w-4 h-4 mr-2" />
+                  데이터베이스
+                </TabsTrigger>
               </TabsList>
-              
+
               {activeTab === 'preview' && (
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-background border rounded-full text-xs font-mono text-muted-foreground shadow-xs">
                   <div className="w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse" />
@@ -203,16 +207,16 @@ export default function SiteDetail() {
                   <div className="w-8 h-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
                 </div>
               ) : (
-                <iframe 
-                  src={`/s/${site?.name}`} 
+                <iframe
+                  src={`/s/${site?.name}`}
                   className="w-full h-full absolute inset-0 border-0 bg-white"
                   title="사이트 미리보기"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock"
                   data-testid="iframe-preview"
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="code" className="flex-1 m-0 p-0 outline-none overflow-hidden flex flex-col bg-[#1e1e1e]">
               {isLoading ? (
                 <div className="p-4 space-y-2">
@@ -225,6 +229,49 @@ export default function SiteDetail() {
                   {site?.htmlContent || "내용 없음"}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="db" className="flex-1 m-0 outline-none overflow-auto">
+              <div className="p-6 max-w-3xl mx-auto space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold mb-1">사이트 데이터베이스</h3>
+                  <p className="text-muted-foreground text-sm">
+                    이 사이트의 HTML 안에서 JavaScript로 데이터를 읽고 쓸 수 있습니다. key-value 형태로 저장됩니다.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    {
+                      label: "📥 값 저장 (set)",
+                      code: `// 값 저장\nawait fetch('/api/sitedb/${site?.name}/방문자수', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ value: '42' })\n});\n`,
+                    },
+                    {
+                      label: "📤 값 불러오기 (get)",
+                      code: `// 값 불러오기\nconst res = await fetch('/api/sitedb/${site?.name}/방문자수');\nconst data = await res.json();\nconsole.log(data.value); // '42'\n`,
+                    },
+                    {
+                      label: "📋 전체 목록 조회 (list)",
+                      code: `// 저장된 모든 key-value 가져오기\nconst res = await fetch('/api/sitedb/${site?.name}');\nconst all = await res.json();\nconsole.log(all); // { 방문자수: '42', ... }\n`,
+                    },
+                    {
+                      label: "🗑️ 값 삭제 (delete)",
+                      code: `// 키 삭제\nawait fetch('/api/sitedb/${site?.name}/방문자수', {\n  method: 'DELETE'\n});\n`,
+                    },
+                  ].map(({ label, code }) => (
+                    <div key={label} className="rounded-lg overflow-hidden border">
+                      <div className="bg-muted px-4 py-2 text-sm font-medium">{label}</div>
+                      <pre className="bg-[#1e1e1e] text-gray-300 text-xs font-mono p-4 overflow-auto leading-relaxed">{code}</pre>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+                  <strong className="text-foreground">💡 사용 팁:</strong> 위 코드를 업로드한 HTML의{" "}
+                  <code className="bg-muted px-1 rounded text-xs">&lt;script&gt;</code> 태그 안에 붙여넣으면 바로 사용 가능합니다.
+                  저장된 데이터는 서버 DB에 영구 보관됩니다.
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
