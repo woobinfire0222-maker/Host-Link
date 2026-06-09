@@ -22,6 +22,10 @@ export default function Login() {
   const [registerForm, setRegisterForm] = useState({ username: "", email: "", password: "", confirm: "" });
   const [loading, setLoading] = useState(false);
 
+  async function parseJson(res: Response) {
+    try { return await res.json(); } catch { return null; }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -32,11 +36,16 @@ export default function Login() {
         credentials: "include",
         body: JSON.stringify({ username: loginForm.username, password: loginForm.password }),
       });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: "로그인 실패", description: data.error, variant: "destructive" }); return; }
+      const data = await parseJson(res);
+      if (!res.ok) {
+        toast({ title: "로그인 실패", description: data?.error ?? "서버 오류가 발생했습니다", variant: "destructive" });
+        return;
+      }
       queryClient.invalidateQueries();
       toast({ title: "로그인 성공", description: `${data.username}님, 환영합니다!` });
       setLocation("/");
+    } catch {
+      toast({ title: "로그인 실패", description: "네트워크 오류가 발생했습니다", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -55,11 +64,16 @@ export default function Login() {
         credentials: "include",
         body: JSON.stringify({ username: registerForm.username, email: registerForm.email, password: registerForm.password }),
       });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: "가입 실패", description: data.error, variant: "destructive" }); return; }
+      const data = await parseJson(res);
+      if (!res.ok) {
+        toast({ title: "가입 실패", description: data?.error ?? "서버 오류가 발생했습니다", variant: "destructive" });
+        return;
+      }
       queryClient.invalidateQueries();
       toast({ title: "가입 완료", description: `${data.username}님, 환영합니다!` });
       setLocation("/");
+    } catch {
+      toast({ title: "가입 실패", description: "네트워크 오류가 발생했습니다", variant: "destructive" });
     } finally {
       setLoading(false);
     }
