@@ -181,10 +181,16 @@ export function createSiteViewRouter(): IRouter {
       return;
     }
 
-    const hideBadge = `<style>#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]{display:none!important;opacity:0!important;pointer-events:none!important;}</style><script>(function(){var SEL='#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge]';function isBadge(n){return n&&n.nodeType===1&&(n.id==='replit-pill'||n.id==='replit-badge-container'||n.id==='replit-badge'||n.classList&&(n.classList.contains('replit-badge'))||n.hasAttribute&&(n.hasAttribute('data-replit-badge')||n.getAttribute('data-state')==='brand'||n.getAttribute('data-state')==='cta'));}function kill(n){if(isBadge(n)){n.remove();return;}if(n&&n.querySelectorAll){n.querySelectorAll(SEL+','+'[data-state="brand"],[data-state="cta"]').forEach(function(e){e.remove();});}}var _ac=Element.prototype.appendChild;Element.prototype.appendChild=function(c){if(isBadge(c))return c;var r=_ac.apply(this,arguments);kill(c);return r;};var _ib=Element.prototype.insertBefore;Element.prototype.insertBefore=function(c){if(isBadge(c))return c;var r=_ib.apply(this,arguments);kill(c);return r;};var _aa=Element.prototype.append;Element.prototype.append=function(){for(var i=0;i<arguments.length;i++){if(isBadge(arguments[i]))return;}return _aa.apply(this,arguments);};kill(document.documentElement);new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){kill(n);});});}).observe(document.documentElement,{childList:true,subtree:true});setInterval(function(){kill(document.documentElement);},300);}());</script>`;
-    const html = site.htmlContent?.includes("</body>")
-      ? site.htmlContent.replace("</body>", `${hideBadge}</body>`)
-      : (site.htmlContent ?? "") + hideBadge;
+    const killScript = `<script>(function(){var SEL='#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]';function isBadge(n){return n&&n.nodeType===1&&(n.id==='replit-pill'||n.id==='replit-badge-container'||n.id==='replit-badge'||(n.classList&&n.classList.contains('replit-badge'))||(n.getAttribute&&(n.getAttribute('data-replit-badge')!=null||n.getAttribute('data-state')==='brand'||n.getAttribute('data-state')==='cta')));}function kill(n){if(!n)return;if(isBadge(n)){n.remove();return;}if(n.querySelectorAll){n.querySelectorAll(SEL).forEach(function(e){e.remove();});}}var _ac=Element.prototype.appendChild;Element.prototype.appendChild=function(c){if(isBadge(c))return c;var r=_ac.apply(this,arguments);kill(c);return r;};var _ib=Element.prototype.insertBefore;Element.prototype.insertBefore=function(c,ref){if(isBadge(c))return c;var r=_ib.apply(this,arguments);kill(c);return r;};var _aa=Element.prototype.append;Element.prototype.append=function(){[].forEach.call(arguments,function(c){if(isBadge(c))return;});return _aa.apply(this,arguments);};new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){kill(n);});});}).observe(document.documentElement,{childList:true,subtree:true});setInterval(function(){kill(document.documentElement);},100);}());</script><style>#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;}</style>`;
+    let rawHtml = site.htmlContent ?? "";
+    let html: string;
+    if (rawHtml.includes("<head>")) {
+      html = rawHtml.replace("<head>", `<head>${killScript}`);
+    } else if (rawHtml.includes("<html>") || rawHtml.includes("<html ")) {
+      html = rawHtml.replace(/<html([^>]*)>/, `<html$1><head>${killScript}</head>`);
+    } else {
+      html = killScript + rawHtml;
+    }
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
