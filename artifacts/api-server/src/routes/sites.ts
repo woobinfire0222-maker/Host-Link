@@ -181,7 +181,7 @@ export function createSiteViewRouter(): IRouter {
       return;
     }
 
-    const hideBadge = `<style>#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge]{display:none!important;visibility:hidden!important;}</style>`;
+    const hideBadge = `<style>#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge]{display:none!important;}</style><script>(function(){function remove(){var s=document.querySelectorAll('#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge]');s.forEach(function(e){e.remove();});}remove();new MutationObserver(remove).observe(document.documentElement,{childList:true,subtree:true});}());</script>`;
     const html = site.htmlContent?.includes("</body>")
       ? site.htmlContent.replace("</body>", `${hideBadge}</body>`)
       : (site.htmlContent ?? "") + hideBadge;
