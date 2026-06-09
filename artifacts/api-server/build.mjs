@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, copyFile } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -13,6 +13,12 @@ const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
+
+  // Resolve connect-pg-simple's table.sql and copy it to dist/
+  // (esbuild bundles JS but not SQL files; connect-pg-simple reads it at runtime relative to __dirname)
+  const pgSimpleDir = path.dirname(globalThis.require.resolve("connect-pg-simple"));
+  const tableSqlSrc = path.resolve(pgSimpleDir, "table.sql");
+  const tableSqlDst = path.resolve(distDir, "table.sql");
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
@@ -118,6 +124,8 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  await copyFile(tableSqlSrc, tableSqlDst);
 }
 
 buildAll().catch((err) => {
