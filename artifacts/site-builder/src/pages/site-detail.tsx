@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ExternalLink, Copy, Check, Trash2, Code2, Monitor, ArrowLeft, AlertTriangle, Database } from "lucide-react";
+import { ExternalLink, Copy, Check, Trash2, Code2, Monitor, ArrowLeft, AlertTriangle, Database, QrCode, Download } from "lucide-react";
 import { useGetSite, useDeleteSite, getGetSiteQueryKey, getListSitesQueryKey, getGetSiteStatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Layout } from "@/components/layout";
 import { useCopy } from "@/hooks/use-copy";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,7 @@ export default function SiteDetail() {
   const { copy } = useCopy();
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "db">("preview");
+  const [qrOpen, setQrOpen] = useState(false);
 
   const { data: site, isLoading, isError } = useGetSite(name || "", {
     query: {
@@ -149,6 +151,15 @@ export default function SiteDetail() {
                 >
                   {copied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
                   링크 복사
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setQrOpen(true)}
+                  className="bg-card shadow-sm"
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  QR 코드
                 </Button>
                 
                 <Button 
@@ -295,6 +306,45 @@ export default function SiteDetail() {
         </div>
 
       </div>
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5" />
+              QR 코드
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-2">
+            <p className="text-sm text-muted-foreground text-center break-all">
+              {window.location.origin}/s/{site?.name}
+            </p>
+            {site?.name && (
+              <div className="border rounded-xl p-3 bg-white shadow-sm">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=4&data=${encodeURIComponent(`${window.location.origin}/s/${site.name}`)}`}
+                  alt="QR 코드"
+                  width={220}
+                  height={220}
+                  className="block"
+                />
+              </div>
+            )}
+            <a
+              href={`https://api.qrserver.com/v1/create-qr-code/?size=512x512&margin=8&data=${encodeURIComponent(`${window.location.origin}/s/${site?.name}`)}`}
+              download={`qr-${site?.name}.png`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                PNG 다운로드
+              </Button>
+            </a>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
