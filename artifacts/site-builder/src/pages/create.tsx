@@ -4,8 +4,8 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Sparkles, UploadCloud, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useCreateSite, useGenerateSite, useCheckSiteName, getCheckSiteNameQueryKey } from "@workspace/api-client-react";
+import { Sparkles, UploadCloud, Link, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useCreateSite, useGenerateSite, useImportSite, useCheckSiteName, getCheckSiteNameQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,11 +38,21 @@ const generateSchema = z.object({
   description: z.string().min(10, "좀 더 자세히 설명해주세요 (10자 이상)")
 });
 
+const importSchema = z.object({
+  name: z.string()
+    .min(1, "사이트 이름을 입력해주세요")
+    .max(50, "50자 이하로 입력해주세요")
+    .regex(siteNameRegex, "영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다"),
+  title: z.string().min(1, "제목을 입력해주세요"),
+  description: z.string().optional(),
+  url: z.string().min(1, "URL을 입력해주세요")
+});
+
 export default function CreateSite() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"upload" | "generate">("upload");
+  const [activeTab, setActiveTab] = useState<"upload" | "generate" | "import">("upload");
 
   const uploadForm = useForm<z.infer<typeof uploadSchema>>({
     resolver: zodResolver(uploadSchema),
@@ -54,7 +64,15 @@ export default function CreateSite() {
     defaultValues: { name: "", title: "", description: "" }
   });
 
-  const currentFormName = activeTab === "upload" ? uploadForm.watch("name") : generateForm.watch("name");
+  const importForm = useForm<z.infer<typeof importSchema>>({
+    resolver: zodResolver(importSchema),
+    defaultValues: { name: "", title: "", description: "", url: "" }
+  });
+
+  const currentFormName =
+    activeTab === "upload" ? uploadForm.watch("name") :
+    activeTab === "generate" ? generateForm.watch("name") :
+    importForm.watch("name");
   const debouncedName = useDebounce(currentFormName, 400);
 
   const { data: nameCheck, isLoading: isCheckingName } = useCheckSiteName(debouncedName, {
@@ -66,6 +84,7 @@ export default function CreateSite() {
 
   const createSite = useCreateSite();
   const generateSite = useGenerateSite();
+  const importSite = useImportSite();
 
   useEffect(() => {
     if (!isAuthLoading && !user) setLocation("/login");
@@ -115,6 +134,23 @@ export default function CreateSite() {
     });
   };
 
+  const onImportSubmit = async (values: z.infer<typeof importSchema>) => {
+    if (nameCheck && !nameCheck.available) {
+      importForm.setError("name", { message: "이미 사용 중인 이름입니다" });
+      return;
+    }
+    importSite.mutate({ data: values }, {
+      onSuccess: (site) => {
+        toast({ title: "사이트를 성공적으로 가져왔습니다!" });
+        setLocation(`/sites/${site.name}`);
+      },
+      onError: (error: unknown) => {
+        const msg = (error as { error?: string })?.error;
+        toast({ title: "가져오기 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
+      }
+    });
+  };
+
   const renderNameField = (form: any) => (
     <FormField
       control={form.control}
@@ -159,14 +195,18 @@ export default function CreateSite() {
       <div className="max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold tracking-tight mb-2">새 사이트 만들기</h1>
-          <p className="text-muted-foreground text-lg">HTML을 업로드하거나, 설명만 입력하면 사이트를 자동으로 생성합니다.</p>
+          <p className="text-muted-foreground text-lg">HTML을 업로드하거나, URL을 붙여넣거나, 설명만 입력하면 사이트를 자동으로 생성합니다.</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-14 mb-8">
+          <TabsList className="grid w-full grid-cols-3 h-14 mb-8">
             <TabsTrigger value="upload" className="text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md" data-testid="tab-upload">
               <UploadCloud className="w-4 h-4 mr-2" />
               HTML 업로드
+            </TabsTrigger>
+            <TabsTrigger value="import" className="text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md" data-testid="tab-import">
+              <Link className="w-4 h-4 mr-2" />
+              URL 가져오기
             </TabsTrigger>
             <TabsTrigger value="generate" className="text-base font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md" data-testid="tab-generate">
               <Sparkles className="w-4 h-4 mr-2" />
@@ -238,6 +278,90 @@ export default function CreateSite() {
                         <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />배포 중...</>
                       ) : (
                         <><UploadCloud className="w-4 h-4 mr-2" />사이트 배포</>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="import" className="mt-0 outline-none">
+            <div className="bg-card border rounded-xl shadow-sm p-6 md:p-8">
+              <Form {...importForm}>
+                <form onSubmit={importForm.handleSubmit(onImportSubmit)} className="space-y-6">
+                  <Alert className="bg-primary/5 border-primary/20">
+                    <Link className="w-4 h-4 text-primary" />
+                    <AlertTitle className="text-foreground font-semibold">URL에서 사이트 가져오기</AlertTitle>
+                    <AlertDescription className="text-muted-foreground text-sm mt-1">
+                      웹사이트 URL을 입력하면 해당 페이지의 HTML을 그대로 가져와서 호스팅합니다. 서버에서 직접 요청하므로 공개 접근 가능한 URL이어야 합니다.
+                    </AlertDescription>
+                  </Alert>
+
+                  <FormField
+                    control={importForm.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>웹사이트 URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com"
+                            type="url"
+                            {...field}
+                            data-testid="input-site-url"
+                          />
+                        </FormControl>
+                        <FormDescription>가져올 사이트의 전체 URL을 입력하세요.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {renderNameField(importForm)}
+                    <FormField
+                      control={importForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>제목</FormLabel>
+                          <FormControl>
+                            <Input placeholder="가져온 사이트 이름" {...field} data-testid="input-import-title" />
+                          </FormControl>
+                          <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={importForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>설명 (선택)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="사이트에 대한 간단한 설명" {...field} data-testid="input-import-desc" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="pt-4 border-t flex justify-end">
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full sm:w-auto"
+                      disabled={importSite.isPending || (nameCheck != null && !nameCheck.available)}
+                      data-testid="button-submit-import"
+                    >
+                      {importSite.isPending ? (
+                        <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />가져오는 중...</>
+                      ) : (
+                        <><Link className="w-4 h-4 mr-2" />사이트 가져오기</>
                       )}
                     </Button>
                   </div>

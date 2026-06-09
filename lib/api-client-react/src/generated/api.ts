@@ -23,6 +23,7 @@ import type {
   ErrorResponse,
   GenerateSiteInput,
   HealthStatus,
+  ImportSiteInput,
   NameCheckResult,
   Site,
   SiteInput,
@@ -265,6 +266,77 @@ export const useCreateSite = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateSiteMutationOptions(options));
+    }
+
+export const getImportSiteUrl = () => {
+
+
+
+
+  return `/api/sites/import`
+}
+
+/**
+ * @summary Import a site from a URL
+ */
+export const importSite = async (importSiteInput: ImportSiteInput, options?: RequestInit): Promise<Site> => {
+
+  return customFetch<Site>(getImportSiteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      importSiteInput,)
+  }
+);}
+
+
+
+
+export const getImportSiteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSite>>, TError,{data: BodyType<ImportSiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importSite>>, TError,{data: BodyType<ImportSiteInput>}, TContext> => {
+
+const mutationKey = ['importSite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importSite>>, {data: BodyType<ImportSiteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importSite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportSiteMutationResult = NonNullable<Awaited<ReturnType<typeof importSite>>>
+    export type ImportSiteMutationBody = BodyType<ImportSiteInput>
+    export type ImportSiteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Import a site from a URL
+ */
+export const useImportSite = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSite>>, TError,{data: BodyType<ImportSiteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importSite>>,
+        TError,
+        {data: BodyType<ImportSiteInput>},
+        TContext
+      > => {
+      return useMutation(getImportSiteMutationOptions(options));
     }
 
 export const getGenerateSiteUrl = () => {

@@ -4,6 +4,7 @@ import { db, sitesTable } from "@workspace/db";
 import {
   CreateSiteBody,
   GenerateSiteBody,
+  ImportSiteBody,
   CheckSiteNameParams,
   GetSiteParams,
   DeleteSiteParams,
@@ -59,6 +60,62 @@ router.post("/sites", async (req, res): Promise<void> => {
 
   const existing = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
   if (existing.length > 0) { res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" }); return; }
+
+  const [site] = await db
+    .insert(sitesTable)
+    .values({ name, title, description: description ?? null, htmlContent, userId: req.session.userId })
+    .returning();
+
+  res.status(201).json({
+    id: site.id, name: site.name, title: site.title, description: site.description,
+    htmlContent: null, createdAt: site.createdAt.toISOString(), updatedAt: site.updatedAt.toISOString(),
+  });
+});
+
+router.post("/sites/import", async (req, res): Promise<void> => {
+  if (!req.session?.userId) {
+    res.status(401).json({ error: "로그인이 필요합니다" });
+    return;
+  }
+
+  const parsed = ImportSiteBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const { name, title, description, url } = parsed.data;
+  const nameError = validateName(name);
+  if (nameError) { res.status(400).json({ error: nameError }); return; }
+
+  const existing = await db.select().from(sitesTable).where(eq(sitesTable.name, name)).limit(1);
+  if (existing.length > 0) { res.status(409).json({ error: "이미 사용 중인 사이트 이름입니다" }); return; }
+
+  let fetchUrl = url.trim();
+  if (!/^https?:\/\//i.test(fetchUrl)) fetchUrl = "https://" + fetchUrl;
+
+  let htmlContent: string;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(fetchUrl, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SiteDrop/1.0)" },
+    });
+    clearTimeout(timeout);
+    if (!response.ok) {
+      res.status(400).json({ error: `URL 요청 실패: HTTP ${response.status}` });
+      return;
+    }
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html") && !contentType.includes("text/plain") && !contentType.includes("application/xhtml")) {
+      res.status(400).json({ error: "HTML 페이지만 가져올 수 있습니다" });
+      return;
+    }
+    htmlContent = await response.text();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.warn({ err, fetchUrl }, "URL fetch failed");
+    res.status(400).json({ error: `URL을 가져오지 못했습니다: ${msg}` });
+    return;
+  }
 
   const [site] = await db
     .insert(sitesTable)

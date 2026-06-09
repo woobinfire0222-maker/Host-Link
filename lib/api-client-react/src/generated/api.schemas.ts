@@ -56,6 +56,19 @@ export interface GenerateSiteInput {
   description: string;
 }
 
+export interface ImportSiteInput {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  name: string;
+  /** @minLength 1 */
+  title: string;
+  description?: string;
+  /** @minLength 1 */
+  url: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }

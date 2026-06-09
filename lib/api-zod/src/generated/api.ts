@@ -50,6 +50,23 @@ export const CreateSiteBody = zod.object({
 
 
 /**
+ * @summary Import a site from a URL
+ */
+export const importSiteBodyNameMax = 50;
+
+
+
+
+
+export const ImportSiteBody = zod.object({
+  "name": zod.string().min(1).max(importSiteBodyNameMax),
+  "title": zod.string().min(1),
+  "description": zod.string().optional(),
+  "url": zod.string().min(1)
+})
+
+
+/**
  * @summary Generate a site from a text description
  */
 export const generateSiteBodyNameMax = 50;

@@ -9,6 +9,7 @@
 export * from './errorResponse';
 export * from './generateSiteInput';
 export * from './healthStatus';
+export * from './importSiteInput';
 export * from './nameCheckResult';
 export * from './site';
 export * from './siteInput';

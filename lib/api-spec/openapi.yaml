@@ -71,6 +71,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /sites/import:
+    post:
+      operationId: importSite
+      tags: [sites]
+      summary: Import a site from a URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportSiteInput"
+      responses:
+        "201":
+          description: Site imported and created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "409":
+          description: Site name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid input or URL fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /sites/generate:
     post:
       operationId: generateSite
@@ -258,6 +289,23 @@ components:
         description:
           type: string
           minLength: 10
+
+    ImportSiteInput:
+      type: object
+      required: [name, title, url]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        url:
+          type: string
+          minLength: 1
 
     ErrorResponse:
       type: object
