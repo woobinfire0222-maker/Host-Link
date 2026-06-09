@@ -41,7 +41,7 @@ export default function Login() {
         toast({ title: "로그인 실패", description: data?.error ?? "서버 오류가 발생했습니다", variant: "destructive" });
         return;
       }
-      queryClient.invalidateQueries();
+      queryClient.setQueryData(["auth", "me"], data);
       toast({ title: "로그인 성공", description: `${data.username}님, 환영합니다!` });
       setLocation("/");
     } catch {
@@ -69,7 +69,7 @@ export default function Login() {
         toast({ title: "가입 실패", description: data?.error ?? "서버 오류가 발생했습니다", variant: "destructive" });
         return;
       }
-      queryClient.invalidateQueries();
+      queryClient.setQueryData(["auth", "me"], data);
       toast({ title: "가입 완료", description: `${data.username}님, 환영합니다!` });
       setLocation("/");
     } catch {
