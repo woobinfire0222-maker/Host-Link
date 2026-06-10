@@ -1,0 +1,3 @@
+- [DB bootstrap](db-bootstrap.md) — DB tables (users/sites/bots/site_data/session) must be created via raw SQL if drizzle-kit push unavailable; session table auto-created by connect-pg-simple (createTableIfMissing:true).
+- [Admin auth flow](admin-auth.md) — Admin PIN verified server-side via POST /admin/verify which sets req.session.adminUnlocked; all admin routes protected by requireAdmin middleware.
+- [API error handling pattern](api-error-pattern.md) — ApiError from customFetch stores server response body in .data property; use err.data?.error || err.message to extract message, not (err as {error?:string}).error.

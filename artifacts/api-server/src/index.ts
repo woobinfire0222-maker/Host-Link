@@ -23,5 +23,5 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  botManager.restoreRunningBots().catch((e) => logger.warn({ e }, "Bot restore error"));
+  botManager.restoreRunningBots().catch((err) => logger.warn({ err }, "Bot restore error"));
 });

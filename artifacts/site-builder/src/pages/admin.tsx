@@ -18,29 +18,41 @@ interface AdminBot {
   id: number; name: string; description: string | null; entryFile: string; status: string; running: boolean; userId: number | null; createdAt: string;
 }
 
-const ADMIN_PASSWORD = "2434";
-
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [unlocked, setUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [wrongPass, setWrongPass] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [tab, setTab] = useState<"users" | "sites" | "bots">("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [sites, setSites] = useState<AdminSite[]>([]);
   const [bots, setBots] = useState<AdminBot[]>([]);
   const [loading, setLoading] = useState(false);
 
-  function handleUnlock(e: React.FormEvent) {
+  async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
-    if (passwordInput === ADMIN_PASSWORD) {
-      setUnlocked(true);
-      setWrongPass(false);
-      loadData();
-    } else {
-      setWrongPass(true);
-      setPasswordInput("");
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: passwordInput }),
+      });
+      if (res.ok) {
+        setUnlocked(true);
+        setWrongPass(false);
+        loadData();
+      } else {
+        setWrongPass(true);
+        setPasswordInput("");
+      }
+    } catch {
+      toast({ title: "오류", description: "서버에 연결할 수 없습니다", variant: "destructive" });
+    } finally {
+      setVerifying(false);
     }
   }
 

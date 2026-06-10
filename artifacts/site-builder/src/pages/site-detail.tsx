@@ -62,6 +62,16 @@ export default function SiteDetail() {
     }
   };
 
+  const extractErrorMsg = (error: unknown): string => {
+    if (error && typeof error === "object") {
+      const data = (error as { data?: { error?: string } }).data;
+      if (data?.error) return data.error;
+      const msg = (error as Error).message;
+      if (msg) return msg;
+    }
+    return "알 수 없는 오류가 발생했습니다";
+  };
+
   const handleDelete = () => {
     if (!site) return;
     deleteSite.mutate({ name: site.name }, {
@@ -72,10 +82,9 @@ export default function SiteDetail() {
         setLocation("/");
       },
       onError: (error: unknown) => {
-        const msg = (error as { error?: string })?.error;
         toast({
           title: "삭제 실패",
-          description: msg || "알 수 없는 오류가 발생했습니다",
+          description: extractErrorMsg(error),
           variant: "destructive"
         });
       }

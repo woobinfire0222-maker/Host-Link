@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Sparkles, UploadCloud, Link, AlertCircle, CheckCircle2, FileUp, Wand2 } from "lucide-react";
-import { useCreateSite, useGenerateSite, useImportSite, useCheckSiteName, getCheckSiteNameQueryKey } from "@workspace/api-client-react";
+import { useCreateSite, useGenerateSite, useImportSite, useCheckSiteName, getCheckSiteNameQueryKey, getListSitesQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,9 +90,20 @@ export default function CreateSite() {
     },
   });
 
+  const queryClient = useQueryClient();
   const createSite = useCreateSite();
   const generateSite = useGenerateSite();
   const importSite = useImportSite();
+
+  const extractErrorMsg = (error: unknown): string => {
+    if (error && typeof error === "object") {
+      const data = (error as { data?: { error?: string } }).data;
+      if (data?.error) return data.error;
+      const msg = (error as Error).message;
+      if (msg) return msg;
+    }
+    return "알 수 없는 오류";
+  };
 
   useEffect(() => {
     if (!isAuthLoading && !user) setLocation("/login");
@@ -131,10 +143,13 @@ export default function CreateSite() {
   const onUploadSubmit = async (values: z.infer<typeof uploadSchema>) => {
     if (nameCheck && !nameCheck.available) { uploadForm.setError("name", { message: "이미 사용 중인 이름입니다" }); return; }
     createSite.mutate({ data: values }, {
-      onSuccess: (site) => { toast({ title: "사이트가 성공적으로 배포되었습니다!" }); setLocation(`/sites/${site.name}`); },
+      onSuccess: (site) => {
+        queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+        toast({ title: "사이트가 성공적으로 배포되었습니다!" });
+        setLocation(`/sites/${site.name}`);
+      },
       onError: (error: unknown) => {
-        const msg = (error as { error?: string })?.error;
-        toast({ title: "배포 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
+        toast({ title: "배포 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
   };
@@ -142,10 +157,13 @@ export default function CreateSite() {
   const onGenerateSubmit = async (values: z.infer<typeof generateSchema>) => {
     if (nameCheck && !nameCheck.available) { generateForm.setError("name", { message: "이미 사용 중인 이름입니다" }); return; }
     generateSite.mutate({ data: values }, {
-      onSuccess: (site) => { toast({ title: "사이트가 생성되었습니다!" }); setLocation(`/sites/${site.name}`); },
+      onSuccess: (site) => {
+        queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+        toast({ title: "사이트가 생성되었습니다!" });
+        setLocation(`/sites/${site.name}`);
+      },
       onError: (error: unknown) => {
-        const msg = (error as { error?: string })?.error;
-        toast({ title: "생성 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
+        toast({ title: "생성 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
   };
@@ -153,10 +171,13 @@ export default function CreateSite() {
   const onImportSubmit = async (values: z.infer<typeof importSchema>) => {
     if (nameCheck && !nameCheck.available) { importForm.setError("name", { message: "이미 사용 중인 이름입니다" }); return; }
     importSite.mutate({ data: values }, {
-      onSuccess: (site) => { toast({ title: "사이트를 성공적으로 가져왔습니다!" }); setLocation(`/sites/${site.name}`); },
+      onSuccess: (site) => {
+        queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+        toast({ title: "사이트를 성공적으로 가져왔습니다!" });
+        setLocation(`/sites/${site.name}`);
+      },
       onError: (error: unknown) => {
-        const msg = (error as { error?: string })?.error;
-        toast({ title: "가져오기 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
+        toast({ title: "가져오기 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
   };
@@ -165,10 +186,13 @@ export default function CreateSite() {
     if (nameCheck && !nameCheck.available) { builderForm.setError("name", { message: "이미 사용 중인 이름입니다" }); return; }
     if (!builderHtml) { toast({ title: "블록을 하나 이상 추가해주세요", variant: "destructive" }); return; }
     createSite.mutate({ data: { ...values, htmlContent: builderHtml } }, {
-      onSuccess: (site) => { toast({ title: "사이트가 배포되었습니다!" }); setLocation(`/sites/${site.name}`); },
+      onSuccess: (site) => {
+        queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+        toast({ title: "사이트가 배포되었습니다!" });
+        setLocation(`/sites/${site.name}`);
+      },
       onError: (error: unknown) => {
-        const msg = (error as { error?: string })?.error;
-        toast({ title: "배포 실패", description: msg || "알 수 없는 오류", variant: "destructive" });
+        toast({ title: "배포 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
   };
