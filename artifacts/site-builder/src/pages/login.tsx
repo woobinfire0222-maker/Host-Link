@@ -84,8 +84,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center gap-2">
-            <img src="/hl-icon-dark.png" alt="Host Link" className="h-24 w-24 dark:hidden" />
-            <img src="/hl-icon-white.png" alt="Host Link" className="h-24 w-24 hidden dark:block" />
+            <img src="/hl-icon-dark.png" alt="Host Link" className="h-40 w-40 dark:hidden" />
+            <img src="/hl-icon-white.png" alt="Host Link" className="h-40 w-40 hidden dark:block" />
             <span className="text-xs font-bold tracking-[0.3em] uppercase text-muted-foreground">Host Link</span>
           </div>
         </div>
