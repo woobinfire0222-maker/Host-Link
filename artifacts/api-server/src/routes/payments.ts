@@ -102,9 +102,10 @@ router.post("/payments/:id/messages", async (req, res): Promise<void> => {
     return;
   }
 
+  // If you own the request you are always the user side, regardless of adminUnlocked
   const [msg] = await db.insert(paymentMessagesTable).values({
     requestId: id,
-    isAdmin: !!isAdmin,
+    isAdmin: !isOwner,
     message: message.trim(),
   }).returning();
 
