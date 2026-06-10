@@ -96,7 +96,7 @@ class BotManager {
       if (existsSync(reqFile)) {
         this.addLog(botId, "📦 requirements.txt 설치 중...");
         await new Promise<void>((resolve) => {
-          const pip = spawn("python3", ["-m", "pip", "install", "-r", reqFile, "--target", pkgDir, "--quiet", "--disable-pip-version-check"], { cwd: workDir });
+          const pip = spawn("python3", ["-m", "pip", "install", "-r", reqFile, "--target", pkgDir, "--no-user", "--quiet", "--disable-pip-version-check"], { cwd: workDir });
           pip.stdout.on("data", (d: Buffer) => {
             const text = d.toString().trim();
             if (text) this.addLog(botId, text);
