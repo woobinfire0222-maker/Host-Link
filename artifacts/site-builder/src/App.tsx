@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import Bots from "@/pages/bots";
 import BotDetail from "@/pages/bot-detail";
+import Sites from "@/pages/sites";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/admin" component={Admin} />
       <Route path="/create" component={CreateSite} />
+      <Route path="/sites" component={Sites} />
       <Route path="/sites/:name" component={SiteDetail} />
       <Route path="/bots" component={Bots} />
       <Route path="/bots/:id" component={BotDetail} />

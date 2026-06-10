@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Layers, LogOut, LogIn, ShieldCheck, Bot } from "lucide-react";
+import { Plus, Layers, LogOut, LogIn, ShieldCheck, Bot, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,7 +40,13 @@ export function Layout({ children }: LayoutProps) {
                 <Link href="/" data-testid="link-dashboard">
                   <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="font-medium">
                     <Layers className="w-4 h-4 mr-1.5" />
-                    대시보드
+                    홈
+                  </Button>
+                </Link>
+                <Link href="/sites" data-testid="link-sites">
+                  <Button variant={location.startsWith("/sites") ? "secondary" : "ghost"} size="sm" className="font-medium">
+                    <Globe className="w-4 h-4 mr-1.5" />
+                    사이트 호스팅
                   </Button>
                 </Link>
                 <Link href="/bots" data-testid="link-bots">
