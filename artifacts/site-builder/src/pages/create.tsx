@@ -299,18 +299,23 @@ export default function CreateSite() {
         )}
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-14 mb-8">
-            <TabsTrigger value="upload" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <UploadCloud className="w-4 h-4 mr-1.5" />HTML 업로드
+          {/* 모바일: 2×2 그리드 / 데스크탑: 1×4 행 */}
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-14 mb-6 gap-px">
+            <TabsTrigger value="upload" className="text-xs sm:text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-0">
+              <UploadCloud className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span>HTML 업로드</span>
             </TabsTrigger>
-            <TabsTrigger value="builder" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Wand2 className="w-4 h-4 mr-1.5" />비주얼 빌더
+            <TabsTrigger value="builder" className="text-xs sm:text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-0">
+              <Wand2 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span>비주얼 빌더</span>
             </TabsTrigger>
-            <TabsTrigger value="import" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Link className="w-4 h-4 mr-1.5" />URL 가져오기
+            <TabsTrigger value="import" className="text-xs sm:text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-0">
+              <Link className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span>URL 가져오기</span>
             </TabsTrigger>
-            <TabsTrigger value="generate" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Sparkles className="w-4 h-4 mr-1.5" />자동 생성
+            <TabsTrigger value="generate" className="text-xs sm:text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-0">
+              <Sparkles className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span>자동 생성</span>
             </TabsTrigger>
           </TabsList>
 

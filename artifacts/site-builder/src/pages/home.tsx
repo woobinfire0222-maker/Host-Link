@@ -177,42 +177,42 @@ export default function Home() {
         </div>
 
         {/* ── 슬롯 업그레이드 배너 ── */}
-        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8">
-          {/* 배경 장식 */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 sm:p-8">
           <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
           <div className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full bg-primary/10 blur-xl pointer-events-none" />
 
-          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="relative flex flex-col gap-5">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-primary/15 text-primary flex-shrink-0">
-                <Sparkles className="w-7 h-7" />
+              <div className="p-2.5 sm:p-3 rounded-xl bg-primary/15 text-primary flex-shrink-0 mt-0.5">
+                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-1">더 많은 슬롯이 필요하신가요?</h2>
+                <h2 className="text-lg sm:text-xl font-bold mb-1">더 많은 슬롯이 필요하신가요?</h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  업그레이드 한 번에 사이트 +1, 봇 +1 슬롯이 추가됩니다.<br />
-                  현재 슬롯: 사이트 {stats?.totalSites ?? 0}/{maxSites} · 봇 {bots.length}/{maxBots}
+                  업그레이드 한 번에 사이트 +1, 봇 +1 슬롯이 추가됩니다.
                 </p>
-                <p className="text-primary font-semibold text-sm mt-1">5,000원 / 업그레이드</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground mt-1.5">
+                  <span>사이트 {stats?.totalSites ?? 0}/{maxSites}</span>
+                  <span>봇 {bots.length}/{maxBots}</span>
+                  <span className="text-primary font-semibold">5,000원 / 업그레이드</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
-                size="lg"
                 onClick={() => setMyPaymentsOpen(true)}
-                className="border-primary/30 hover:bg-primary/5"
+                className="border-primary/30 hover:bg-primary/5 flex-1 sm:flex-none"
               >
                 <Receipt className="w-4 h-4 mr-2" />
                 결제 내역
               </Button>
               <Button
-                size="lg"
                 onClick={() => setPaymentOpen(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 px-6 font-semibold"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 font-semibold flex-1 sm:flex-none sm:px-6"
               >
-                <CreditCard className="w-5 h-5 mr-2" />
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 결제 문의
               </Button>
             </div>

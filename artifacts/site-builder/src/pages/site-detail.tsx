@@ -143,49 +143,52 @@ export default function SiteDetail() {
             )}
           </div>
           
-          <div className="flex items-center gap-2 self-start">
+          <div className="flex flex-wrap items-center gap-2 self-start">
             {isLoading ? (
               <>
-                <Skeleton className="h-10 w-28" />
-                <Skeleton className="h-10 w-28" />
-                <Skeleton className="h-10 w-10" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-9" />
               </>
             ) : (
               <>
                 <Button 
                   variant="outline" 
+                  size="sm"
                   onClick={handleCopyLink}
                   className="bg-card shadow-sm"
                   data-testid="button-copy-link"
                 >
-                  {copied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
-                  링크 복사
+                  {copied ? <Check className="w-4 h-4 sm:mr-2 text-green-500" /> : <Copy className="w-4 h-4 sm:mr-2" />}
+                  <span className="hidden sm:inline">링크 복사</span>
                 </Button>
 
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setQrOpen(true)}
                   className="bg-card shadow-sm"
                 >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  QR 코드
+                  <QrCode className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">QR 코드</span>
                 </Button>
                 
                 <Button 
                   variant="default"
+                  size="sm"
                   className="shadow-sm"
                   asChild
                   data-testid="button-visit-live"
                 >
                   <a href={`/s/${site?.name}`} target="_blank" rel="noopener noreferrer">
-                    바로 열기
-                    <ExternalLink className="w-4 h-4 ml-2" />
+                    <ExternalLink className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">바로 열기</span>
                   </a>
                 </Button>
 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon" className="shadow-sm" data-testid="button-delete-site">
+                    <Button variant="destructive" size="sm" className="shadow-sm px-2.5" data-testid="button-delete-site">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </AlertDialogTrigger>

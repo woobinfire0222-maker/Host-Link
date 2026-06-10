@@ -242,34 +242,34 @@ export default function BotDetail() {
   return (
     <Layout>
       <div className="flex flex-col gap-4 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex flex-wrap items-center gap-2 mt-2">
           <Link href="/bots">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="px-2">
               <ArrowLeft className="w-4 h-4 mr-1" />
-              봇 목록
+              <span className="hidden sm:inline">봇 목록</span>
             </Button>
           </Link>
-          <div className="flex items-center gap-2 ml-2">
-            <Bot className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold">{bot.name}</h1>
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary flex-shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold truncate max-w-[140px] sm:max-w-none">{bot.name}</h1>
           </div>
-          <Badge variant={running ? "default" : "secondary"} className={cn("ml-1", running && "bg-green-500 text-white")}>
+          <Badge variant={running ? "default" : "secondary"} className={cn(running && "bg-green-500 text-white")}>
             {running ? "● 실행 중" : "○ 중지됨"}
           </Badge>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-              <Settings className="w-4 h-4 mr-1" />
-              설정
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} className="px-2.5">
+              <Settings className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">설정</span>
             </Button>
             {running ? (
               <Button variant="destructive" size="sm" onClick={stopBot} disabled={actionLoading}>
-                {actionLoading ? <div className="w-4 h-4 mr-1 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Square className="w-4 h-4 mr-1 fill-current" />}
-                중지
+                {actionLoading ? <div className="w-4 h-4 sm:mr-1 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Square className="w-4 h-4 sm:mr-1 fill-current" />}
+                <span className="hidden sm:inline">중지</span>
               </Button>
             ) : (
               <Button size="sm" onClick={startBot} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
-                {actionLoading ? <div className="w-4 h-4 mr-1 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Play className="w-4 h-4 mr-1 fill-current" />}
-                시작
+                {actionLoading ? <div className="w-4 h-4 sm:mr-1 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Play className="w-4 h-4 sm:mr-1 fill-current" />}
+                <span className="hidden sm:inline">시작</span>
               </Button>
             )}
           </div>
