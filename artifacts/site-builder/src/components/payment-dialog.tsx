@@ -31,7 +31,7 @@ async function apiFetch(url: string, opts?: RequestInit) {
   return body;
 }
 
-const BANK_INFO = "카카오뱅크 3333-01-1234567 홍길동";
+const BANK_INFO = "토스뱅크 1908-3953-4245 김우빈";
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "approved") return <Badge className="bg-green-500 text-white text-xs">승인됨</Badge>;
