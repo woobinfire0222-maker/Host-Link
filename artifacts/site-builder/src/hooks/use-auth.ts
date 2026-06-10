@@ -5,6 +5,8 @@ export interface AuthUser {
   username: string;
   email: string;
   isAdmin: boolean;
+  extraSiteSlots: number;
+  extraBotSlots: number;
 }
 
 async function fetchMe(): Promise<AuthUser | null> {

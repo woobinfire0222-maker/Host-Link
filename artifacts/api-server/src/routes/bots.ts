@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, botsTable } from "@workspace/db";
+import { eq, and, count } from "drizzle-orm";
+import { db, botsTable, usersTable } from "@workspace/db";
 import { botManager } from "../lib/bot-manager";
 import { logger } from "../lib/logger";
 import {
@@ -19,6 +19,16 @@ function requireAuth(req: Request, res: Response): boolean {
     return false;
   }
   return true;
+}
+
+async function checkBotLimit(userId: number): Promise<{ allowed: boolean; current: number; max: number }> {
+  const [user] = await db.select({ extraBotSlots: usersTable.extraBotSlots })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) return { allowed: false, current: 0, max: 1 };
+  const [{ total }] = await db.select({ total: count() })
+    .from(botsTable).where(eq(botsTable.userId, userId));
+  const max = 1 + user.extraBotSlots;
+  return { allowed: Number(total) < max, current: Number(total), max };
 }
 
 async function getOwnedBot(req: Request, res: Response) {
@@ -42,6 +52,11 @@ router.get("/bots", async (req, res): Promise<void> => {
 
 router.post("/bots", async (req, res): Promise<void> => {
   if (!requireAuth(req, res)) return;
+  const limit = await checkBotLimit(req.session!.userId!);
+  if (!limit.allowed) {
+    res.status(402).json({ error: `봇 슬롯이 꽉 찼습니다 (${limit.current}/${limit.max}). 추가 슬롯을 구매하세요.`, code: "BOT_LIMIT" });
+    return;
+  }
   const { name, description, language } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "봇 이름을 입력해주세요" }); return; }
   const isJS = language === "javascript";

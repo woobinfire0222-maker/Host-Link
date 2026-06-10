@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, count, and, isNull } from "drizzle-orm";
-import { db, sitesTable } from "@workspace/db";
+import { db, sitesTable, usersTable } from "@workspace/db";
 import {
   CreateSiteBody,
   GenerateSiteBody,
@@ -24,6 +24,16 @@ function validateName(name: string): string | null {
   return null;
 }
 
+async function checkSiteLimit(userId: number): Promise<{ allowed: boolean; current: number; max: number }> {
+  const [user] = await db.select({ extraSiteSlots: usersTable.extraSiteSlots })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) return { allowed: false, current: 0, max: 1 };
+  const [{ total }] = await db.select({ total: count() })
+    .from(sitesTable).where(eq(sitesTable.userId, userId));
+  const max = 1 + user.extraSiteSlots;
+  return { allowed: Number(total) < max, current: Number(total), max };
+}
+
 router.get("/sites", async (req, res): Promise<void> => {
   const userId = req.session?.userId ?? null;
   const where = userId != null ? eq(sitesTable.userId, userId) : isNull(sitesTable.userId);
@@ -45,6 +55,12 @@ router.get("/sites", async (req, res): Promise<void> => {
 router.post("/sites", async (req, res): Promise<void> => {
   if (!req.session?.userId) {
     res.status(401).json({ error: "로그인이 필요합니다" });
+    return;
+  }
+
+  const limit = await checkSiteLimit(req.session.userId);
+  if (!limit.allowed) {
+    res.status(402).json({ error: `사이트 슬롯이 꽉 찼습니다 (${limit.current}/${limit.max}). 추가 슬롯을 구매하세요.`, code: "SITE_LIMIT" });
     return;
   }
 
@@ -75,6 +91,12 @@ router.post("/sites", async (req, res): Promise<void> => {
 router.post("/sites/import", async (req, res): Promise<void> => {
   if (!req.session?.userId) {
     res.status(401).json({ error: "로그인이 필요합니다" });
+    return;
+  }
+
+  const limit = await checkSiteLimit(req.session.userId);
+  if (!limit.allowed) {
+    res.status(402).json({ error: `사이트 슬롯이 꽉 찼습니다 (${limit.current}/${limit.max}). 추가 슬롯을 구매하세요.`, code: "SITE_LIMIT" });
     return;
   }
 
@@ -143,6 +165,12 @@ router.post("/sites/generate", async (req, res): Promise<void> => {
     return;
   }
 
+  const limit = await checkSiteLimit(req.session.userId);
+  if (!limit.allowed) {
+    res.status(402).json({ error: `사이트 슬롯이 꽉 찼습니다 (${limit.current}/${limit.max}). 추가 슬롯을 구매하세요.`, code: "SITE_LIMIT" });
+    return;
+  }
+
   const parsed = GenerateSiteBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -200,7 +228,6 @@ router.get("/sites/:name", async (req, res): Promise<void> => {
   const [site] = await db.select().from(sitesTable).where(eq(sitesTable.name, params.data.name)).limit(1);
   if (!site) { res.status(404).json({ error: "사이트를 찾을 수 없습니다" }); return; }
 
-  // Only owner can see site details
   if (site.userId != null && req.session?.userId !== site.userId) {
     res.status(403).json({ error: "접근 권한이 없습니다" });
     return;
@@ -247,10 +274,9 @@ export function createSiteViewRouter(): IRouter {
       return;
     }
 
-    const killScript = `<style>#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;position:fixed!important;top:-9999px!important;left:-9999px!important;}</style><script>(function(){var IDS=['replit-pill','replit-badge-container','replit-badge'];var SEL='#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]';function nukeRoot(root){if(!root)return;IDS.forEach(function(id){var e=root.getElementById?root.getElementById(id):root.querySelector('#'+id);if(e)e.remove();});try{root.querySelectorAll(SEL).forEach(function(e){e.remove();});}catch(ex){}}function nuke(){nukeRoot(document);try{document.querySelectorAll('*').forEach(function(el){if(el.shadowRoot)nukeRoot(el.shadowRoot);});}catch(ex){}}var _ce=document.createElement.bind(document);document.createElement=function(t){var el=_ce(t);Object.defineProperty(el,'id',{set:function(v){Object.defineProperty(el,'id',{value:v,writable:true,configurable:true});if(IDS.indexOf(v)!==-1){setTimeout(function(){if(el.parentNode)el.remove();},0);}},get:function(){return el.getAttribute('id')||'';},configurable:true});return el;};var _ac=Element.prototype.appendChild;Element.prototype.appendChild=function(){var r=_ac.apply(this,arguments);nuke();return r;};var _ib=Element.prototype.insertBefore;Element.prototype.insertBefore=function(){var r=_ib.apply(this,arguments);nuke();return r;};var _aa=Element.prototype.append;if(_aa)Element.prototype.append=function(){var r=_aa.apply(this,arguments);nuke();return r;};var _ip=Element.prototype.insertAdjacentElement;if(_ip)Element.prototype.insertAdjacentElement=function(){var r=_ip.apply(this,arguments);nuke();return r;};var _ih=Element.prototype.insertAdjacentHTML;if(_ih)Element.prototype.insertAdjacentHTML=function(){var r=_ih.apply(this,arguments);nuke();return r;};new MutationObserver(nuke).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['id','data-state','data-replit-badge']});(function loop(){nuke();requestAnimationFrame(loop);})();setInterval(nuke,16);}());</script>`;
+    const killScript = `<style>#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;position:fixed!important;top:-9999px!important;left:-9999px!important;}</style><script>(function(){var IDS=['replit-pill','replit-badge-container','replit-badge'];var SEL='#replit-pill,#replit-badge-container,#replit-badge,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"]';function nukeRoot(root){if(!root)return;IDS.forEach(function(id){var e=root.getElementById?root.getElementById(id):root.querySelector('#'+id);if(e)e.remove();});try{root.querySelectorAll(SEL).forEach(function(e){e.remove();});}catch(ex){}}function nuke(){nukeRoot(document);try{document.querySelectorAll('*').forEach(function(el){if(el.shadowRoot)nukeRoot(el.shadowRoot);});}catch(ex){}}var _ce=document.createElement.bind(document);document.createElement=function(t){var el=_ce(t);Object.defineProperty(el,'id',{set:function(v){Object.defineProperty(el,'id',{value:v,writable:true,configurable:true});if(IDS.indexOf(v)!==-1){setTimeout(function(){if(el.parentNode)el.remove();},0);}},get:function(){return el.getAttribute('id')||'';},configurable:true});return el;};var _ac=Element.prototype.appendChild;Element.prototype.appendChild=function(){var r=_ac.apply(this,arguments);nuke();return r;};var _ib=Element.prototype.insertBefore;Element.prototype.insertBefore=function(){var r=_ib.apply(this,arguments);nuke();return r;};var _aa=Element.prototype.append;if(_aa)Element.prototype.append=function(){var r=_aa.apply(this,arguments);nuke();return r;};var _ip=Element.prototype.insertAdjacentElement;if(_ip)Element.prototype.insertAdjacentElement=function(){var r=_ip.apply(this,arguments);nuke();return r;};var _ih=Element.prototype.insertAdjacentHTML;if(_ih)Element.prototype.insertAdjacentHTML=function(){var r=_ih.apply(this,arguments);nuke();return r;};}());</script>`;
     const viewportMeta = `<meta name="viewport" content="width=device-width, initial-scale=1">`;
     let rawHtml = site.htmlContent ?? "";
-    // Inject viewport if missing (fixes mobile rendering)
     if (!rawHtml.includes('name="viewport"')) {
       if (rawHtml.includes("</head>")) {
         rawHtml = rawHtml.replace("</head>", `${viewportMeta}</head>`);

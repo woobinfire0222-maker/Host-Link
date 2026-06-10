@@ -10,7 +10,7 @@ const BOT_DATA_DIR = path.resolve(process.cwd(), "../../bot-data");
 const MAX_LOG_LINES = 500;
 
 interface BotState {
-  process: ChildProcess;
+  process: ChildProcess | null;
   logs: string[];
   clients: Set<Response>;
   startedAt: Date;
@@ -86,10 +86,22 @@ class BotManager {
       return { ok: false, error: `진입 파일을 찾을 수 없습니다: ${entryFile}` };
     }
 
-    const state: BotState = { process: null as any, logs: [], clients: new Set(), startedAt: new Date() };
+    const state: BotState = { process: null, logs: [], clients: new Set(), startedAt: new Date() };
     this.states.set(botId, state);
     this.recentLogs.delete(botId);
 
+    try {
+      await db.update(botsTable).set({ status: "running" }).where(eq(botsTable.id, botId));
+    } catch {}
+
+    // Run install + spawn in background — do NOT await so HTTP responds immediately
+    void this._installAndRun(botId, workDir, entryFile, state);
+
+    logger.info({ botId }, "Bot start initiated");
+    return { ok: true };
+  }
+
+  private async _installAndRun(botId: number, workDir: string, entryFile: string, state: BotState): Promise<void> {
     const isJS = entryFile.endsWith(".js");
 
     if (isJS) {
@@ -145,9 +157,14 @@ class BotManager {
       }
     }
 
-    const isJSBot = entryFile.endsWith(".js");
+    // Check if stop was requested while installing
+    if (!this.states.has(botId)) {
+      this.addLog(botId, "🛑 시작 전 중지됨");
+      return;
+    }
+
     let proc;
-    if (isJSBot) {
+    if (isJS) {
       proc = spawn("node", [entryFile], { cwd: workDir, env: { ...process.env } });
     } else {
       const pkgDir = path.join(workDir, ".packages");
@@ -158,10 +175,11 @@ class BotManager {
         env: { ...process.env, PYTHONUNBUFFERED: "1", PYTHONPATH: pythonPath },
       });
     }
+
     state.process = proc;
 
-    const runtime = entryFile.endsWith(".js") ? "node" : "python3";
-    this.addLog(botId, `🚀 봇 시작: ${runtime} ${entryFile} (PID: ${proc.pid})`);
+    const runtime = isJS ? "node" : "python3";
+    this.addLog(botId, `🚀 봇 시작: ${runtime} ${entryFile} (PID: ${proc.pid ?? "?"})`);
 
     proc.on("error", (err) => {
       this.addLog(botId, `💥 프로세스 오류: ${err.message}`);
@@ -188,20 +206,24 @@ class BotManager {
         await db.update(botsTable).set({ status: "stopped" }).where(eq(botsTable.id, botId));
       } catch {}
     });
-
-    await db.update(botsTable).set({ status: "running" }).where(eq(botsTable.id, botId));
-    logger.info({ botId, pid: proc.pid }, "Bot started");
-    return { ok: true };
   }
 
   async stop(botId: number): Promise<{ ok: boolean; error?: string }> {
     const state = this.states.get(botId);
     if (!state) return { ok: true };
     this.addLog(botId, "🛑 중지 요청...");
-    state.process.kill("SIGTERM");
-    setTimeout(() => {
-      if (this.states.has(botId)) state.process.kill("SIGKILL");
-    }, 3000);
+    if (state.process) {
+      state.process.kill("SIGTERM");
+      setTimeout(() => {
+        if (this.states.has(botId) && state.process) state.process.kill("SIGKILL");
+      }, 3000);
+    } else {
+      // Process not spawned yet (still installing) — remove state so _installAndRun aborts
+      this.states.delete(botId);
+      try {
+        await db.update(botsTable).set({ status: "stopped" }).where(eq(botsTable.id, botId));
+      } catch {}
+    }
     return { ok: true };
   }
 

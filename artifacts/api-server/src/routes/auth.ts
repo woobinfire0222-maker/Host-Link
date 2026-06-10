@@ -41,7 +41,7 @@ router.post("/auth/register", async (req: Request, res: Response, next: NextFunc
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    res.status(201).json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin ?? false });
+    res.status(201).json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin ?? false, extraSiteSlots: user.extraSiteSlots ?? 0, extraBotSlots: user.extraBotSlots ?? 0 });
   } catch (err) {
     next(err);
   }
@@ -68,7 +68,7 @@ router.post("/auth/login", async (req: Request, res: Response, next: NextFunctio
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    res.json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin });
+    res.json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin, extraSiteSlots: user.extraSiteSlots ?? 0, extraBotSlots: user.extraBotSlots ?? 0 });
   } catch (err) {
     next(err);
   }
@@ -87,7 +87,7 @@ router.get("/auth/me", async (req: Request, res: Response, next: NextFunction): 
       return;
     }
     const [user] = await db
-      .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, isAdmin: usersTable.isAdmin, createdAt: usersTable.createdAt })
+      .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, isAdmin: usersTable.isAdmin, extraSiteSlots: usersTable.extraSiteSlots, extraBotSlots: usersTable.extraBotSlots, createdAt: usersTable.createdAt })
       .from(usersTable)
       .where(eq(usersTable.id, req.session.userId))
       .limit(1);
@@ -97,7 +97,7 @@ router.get("/auth/me", async (req: Request, res: Response, next: NextFunction): 
       res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
       return;
     }
-    res.json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin });
+    res.json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin, extraSiteSlots: user.extraSiteSlots ?? 0, extraBotSlots: user.extraBotSlots ?? 0 });
   } catch (err) {
     next(err);
   }
