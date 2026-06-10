@@ -22,8 +22,8 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 router.post("/payments/request", async (req, res): Promise<void> => {
   if (!requireAuth(req, res)) return;
   const { slotType, message } = req.body as { slotType: string; message?: string };
-  if (slotType !== "site" && slotType !== "bot") {
-    res.status(400).json({ error: "slotType은 'site' 또는 'bot'이어야 합니다" });
+  if (!["site", "bot", "upgrade"].includes(slotType)) {
+    res.status(400).json({ error: "유효하지 않은 slotType입니다" });
     return;
   }
 
@@ -155,15 +155,13 @@ router.post("/admin/payments/:id/approve", requireAdmin, async (req, res): Promi
     .where(eq(usersTable.id, request.userId)).limit(1);
   if (!user) { res.status(404).json({ error: "사용자를 찾을 수 없습니다" }); return; }
 
-  if (request.slotType === "site") {
-    await db.update(usersTable)
-      .set({ extraSiteSlots: user.extraSiteSlots + 1 })
-      .where(eq(usersTable.id, user.id));
-  } else {
-    await db.update(usersTable)
-      .set({ extraBotSlots: user.extraBotSlots + 1 })
-      .where(eq(usersTable.id, user.id));
-  }
+  // Each upgrade grants +1 site slot AND +1 bot slot
+  await db.update(usersTable)
+    .set({
+      extraSiteSlots: user.extraSiteSlots + 1,
+      extraBotSlots: user.extraBotSlots + 1,
+    })
+    .where(eq(usersTable.id, user.id));
 
   await db.update(paymentRequestsTable)
     .set({ status: "approved", adminNote: note ?? null, updatedAt: new Date() })
@@ -179,7 +177,7 @@ router.post("/admin/payments/:id/approve", requireAdmin, async (req, res): Promi
     await db.insert(paymentMessagesTable).values({
       requestId: id,
       isAdmin: true,
-      message: `✅ 결제가 승인됐습니다. ${request.slotType === "site" ? "사이트" : "봇"} 슬롯이 1개 추가됐습니다.`,
+      message: `✅ 결제가 승인됐습니다. 사이트 슬롯과 봇 슬롯이 각 1개씩 추가됐습니다.`,
     });
   }
 

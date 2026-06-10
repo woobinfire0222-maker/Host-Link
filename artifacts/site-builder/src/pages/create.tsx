@@ -4,8 +4,8 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Sparkles, UploadCloud, Link, AlertCircle, CheckCircle2, FileUp, Wand2 } from "lucide-react";
-import { useCreateSite, useGenerateSite, useImportSite, useCheckSiteName, getCheckSiteNameQueryKey, getListSitesQueryKey } from "@workspace/api-client-react";
+import { Sparkles, UploadCloud, Link, AlertCircle, CheckCircle2, FileUp, Wand2, CreditCard, Receipt } from "lucide-react";
+import { useCreateSite, useGenerateSite, useImportSite, useCheckSiteName, getCheckSiteNameQueryKey, getListSitesQueryKey, useListSites } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { useDebounce } from "@/lib/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { VisualBuilder, generateHtmlFromBlocks } from "@/components/visual-builder";
+import { PaymentDialog, MyPaymentsDialog } from "@/components/payment-dialog";
 
 const siteNameRegex = /^[a-z0-9-]+$/;
 
@@ -54,6 +55,12 @@ export default function CreateSite() {
   const [activeTab, setActiveTab] = useState<"upload" | "import" | "generate" | "builder">("upload");
   const [builderHtml, setBuilderHtml] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [myPaymentsOpen, setMyPaymentsOpen] = useState(false);
+
+  const { data: sites = [] } = useListSites({ query: { enabled: !!user, queryKey: getListSitesQueryKey() } });
+  const maxSites = user ? 1 + (user.extraSiteSlots ?? 0) : 1;
+  const atLimit = sites.length >= maxSites;
 
   const uploadForm = useForm<z.infer<typeof uploadSchema>>({
     resolver: zodResolver(uploadSchema),
@@ -105,6 +112,14 @@ export default function CreateSite() {
     return "알 수 없는 오류";
   };
 
+  const isLimitError = (error: unknown): boolean => {
+    if (error && typeof error === "object") {
+      const data = (error as { data?: { code?: string } }).data;
+      return data?.code === "SITE_LIMIT";
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (!isAuthLoading && !user) setLocation("/login");
   }, [user, isAuthLoading, setLocation]);
@@ -149,6 +164,7 @@ export default function CreateSite() {
         setLocation(`/sites/${site.name}`);
       },
       onError: (error: unknown) => {
+        if (isLimitError(error)) { setPaymentOpen(true); return; }
         toast({ title: "배포 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
@@ -163,6 +179,7 @@ export default function CreateSite() {
         setLocation(`/sites/${site.name}`);
       },
       onError: (error: unknown) => {
+        if (isLimitError(error)) { setPaymentOpen(true); return; }
         toast({ title: "생성 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
@@ -177,6 +194,7 @@ export default function CreateSite() {
         setLocation(`/sites/${site.name}`);
       },
       onError: (error: unknown) => {
+        if (isLimitError(error)) { setPaymentOpen(true); return; }
         toast({ title: "가져오기 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
@@ -192,6 +210,7 @@ export default function CreateSite() {
         setLocation(`/sites/${site.name}`);
       },
       onError: (error: unknown) => {
+        if (isLimitError(error)) { setPaymentOpen(true); return; }
         toast({ title: "배포 실패", description: extractErrorMsg(error), variant: "destructive" });
       },
     });
@@ -239,28 +258,59 @@ export default function CreateSite() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="mb-8">
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2">새 사이트 만들기</h1>
-          <p className="text-muted-foreground text-lg">HTML 업로드, URL 가져오기, 비주얼 빌더, AI 자동 생성 — 원하는 방법을 선택하세요.</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-2">새 사이트 만들기</h1>
+            <p className="text-muted-foreground text-lg">HTML 업로드, URL 가져오기, 비주얼 빌더, AI 자동 생성 — 원하는 방법을 선택하세요.</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+            <Button variant="outline" size="sm" onClick={() => setMyPaymentsOpen(true)}>
+              <Receipt className="w-4 h-4 mr-2" />
+              결제 내역
+            </Button>
+            {atLimit && (
+              <Button size="sm" onClick={() => setPaymentOpen(true)}>
+                <CreditCard className="w-4 h-4 mr-2" />
+                결제 문의
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Slot indicator */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+          <span>사이트 슬롯 {sites.length}/{maxSites} 사용 중</span>
+          {atLimit && (
+            <button onClick={() => setPaymentOpen(true)} className="text-primary underline underline-offset-2 text-xs">
+              추가 슬롯 구매
+            </button>
+          )}
+        </div>
+
+        {atLimit && (
+          <Alert className="mb-6 border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700">
+            <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-300">사이트 슬롯이 꽉 찼습니다</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              현재 {sites.length}/{maxSites} 슬롯을 사용 중입니다.{" "}
+              <button onClick={() => setPaymentOpen(true)} className="underline font-medium">결제 문의</button>를 통해 슬롯을 추가하세요. (5,000원/업그레이드)
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-4 h-14 mb-8">
             <TabsTrigger value="upload" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <UploadCloud className="w-4 h-4 mr-1.5" />
-              HTML 업로드
+              <UploadCloud className="w-4 h-4 mr-1.5" />HTML 업로드
             </TabsTrigger>
             <TabsTrigger value="builder" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Wand2 className="w-4 h-4 mr-1.5" />
-              비주얼 빌더
+              <Wand2 className="w-4 h-4 mr-1.5" />비주얼 빌더
             </TabsTrigger>
             <TabsTrigger value="import" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Link className="w-4 h-4 mr-1.5" />
-              URL 가져오기
+              <Link className="w-4 h-4 mr-1.5" />URL 가져오기
             </TabsTrigger>
             <TabsTrigger value="generate" className="text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">
-              <Sparkles className="w-4 h-4 mr-1.5" />
-              자동 생성
+              <Sparkles className="w-4 h-4 mr-1.5" />자동 생성
             </TabsTrigger>
           </TabsList>
 
@@ -271,83 +321,47 @@ export default function CreateSite() {
                 <form onSubmit={uploadForm.handleSubmit(onUploadSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderNameField(uploadForm)}
-                    <FormField
-                      control={uploadForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>제목</FormLabel>
-                          <FormControl><Input placeholder="내 멋진 사이트" {...field} /></FormControl>
-                          <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={uploadForm.control} name="title" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>제목</FormLabel>
+                        <FormControl><Input placeholder="내 멋진 사이트" {...field} /></FormControl>
+                        <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
-                  <FormField
-                    control={uploadForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>설명 (선택)</FormLabel>
-                        <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={uploadForm.control}
-                    name="htmlContent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <FormLabel className="mb-0">HTML 내용</FormLabel>
-                          <div>
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept=".html,.htm"
-                              className="hidden"
-                              onChange={handleFileUpload}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs gap-1.5"
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <FileUp className="w-3.5 h-3.5" />
-                              파일 선택
-                            </Button>
-                          </div>
+                  <FormField control={uploadForm.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>설명 (선택)</FormLabel>
+                      <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={uploadForm.control} name="htmlContent" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <FormLabel className="mb-0">HTML 내용</FormLabel>
+                        <div>
+                          <input ref={fileInputRef} type="file" accept=".html,.htm" className="hidden" onChange={handleFileUpload} />
+                          <Button type="button" variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => fileInputRef.current?.click()}>
+                            <FileUp className="w-3.5 h-3.5" />파일 선택
+                          </Button>
                         </div>
-                        <FormControl>
-                          <Textarea
-                            placeholder={"<!DOCTYPE html>\n<html>\n  <body>\n    <h1>안녕하세요!</h1>\n  </body>\n</html>"}
-                            className="font-mono h-[320px] bg-muted/50 border-input"
-                            {...field}
-                            data-testid="input-site-html"
-                          />
-                        </FormControl>
-                        <FormDescription>HTML 파일을 직접 선택하거나, 코드를 붙여넣으세요.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </div>
+                      <FormControl>
+                        <Textarea placeholder={"<!DOCTYPE html>\n<html>\n  <body>\n    <h1>안녕하세요!</h1>\n  </body>\n</html>"}
+                          className="font-mono h-[320px] bg-muted/50 border-input" {...field} data-testid="input-site-html" />
+                      </FormControl>
+                      <FormDescription>HTML 파일을 직접 선택하거나, 코드를 붙여넣으세요.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="pt-4 border-t flex justify-end">
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full sm:w-auto"
-                      disabled={createSite.isPending || (nameCheck != null && !nameCheck.available)}
-                      data-testid="button-submit-upload"
-                    >
-                      {createSite.isPending ? (
-                        <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />배포 중...</>
-                      ) : (
-                        <><UploadCloud className="w-4 h-4 mr-2" />사이트 배포</>
-                      )}
+                    <Button type="submit" size="lg" className="w-full sm:w-auto"
+                      disabled={createSite.isPending || (nameCheck != null && !nameCheck.available)} data-testid="button-submit-upload">
+                      {createSite.isPending
+                        ? <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />배포 중...</>
+                        : <><UploadCloud className="w-4 h-4 mr-2" />사이트 배포</>}
                     </Button>
                   </div>
                 </form>
@@ -362,50 +376,31 @@ export default function CreateSite() {
                 <form onSubmit={builderForm.handleSubmit(onBuilderSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderNameField(builderForm, "input-builder-name")}
-                    <FormField
-                      control={builderForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>사이트 제목</FormLabel>
-                          <FormControl><Input placeholder="내 멋진 사이트" {...field} /></FormControl>
-                          <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={builderForm.control}
-                    name="description"
-                    render={({ field }) => (
+                    <FormField control={builderForm.control} name="title" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>설명 (선택)</FormLabel>
-                        <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
+                        <FormLabel>사이트 제목</FormLabel>
+                        <FormControl><Input placeholder="내 멋진 사이트" {...field} /></FormControl>
+                        <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-
-                  <div className="border-t pt-6">
-                    <VisualBuilder
-                      title={builderForm.watch("title")}
-                      onHtmlChange={setBuilderHtml}
-                    />
+                    )} />
                   </div>
-
+                  <FormField control={builderForm.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>설명 (선택)</FormLabel>
+                      <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <div className="border-t pt-6">
+                    <VisualBuilder title={builderForm.watch("title")} onHtmlChange={setBuilderHtml} />
+                  </div>
                   <div className="pt-4 border-t flex justify-end">
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full sm:w-auto"
-                      disabled={createSite.isPending || (nameCheck != null && !nameCheck.available)}
-                    >
-                      {createSite.isPending ? (
-                        <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />배포 중...</>
-                      ) : (
-                        <><Wand2 className="w-4 h-4 mr-2" />사이트 배포</>
-                      )}
+                    <Button type="submit" size="lg" className="w-full sm:w-auto"
+                      disabled={createSite.isPending || (nameCheck != null && !nameCheck.available)}>
+                      {createSite.isPending
+                        ? <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />배포 중...</>
+                        : <><Wand2 className="w-4 h-4 mr-2" />사이트 배포</>}
                     </Button>
                   </div>
                 </form>
@@ -423,59 +418,41 @@ export default function CreateSite() {
                     <AlertTitle className="text-foreground font-semibold">URL에서 사이트 가져오기</AlertTitle>
                     <AlertDescription className="text-muted-foreground text-sm mt-1 space-y-1">
                       <p>웹사이트 URL을 입력하면 해당 페이지의 HTML을 그대로 가져와서 호스팅합니다.</p>
-                      <p className="text-amber-600 dark:text-amber-400 font-medium">⚠️ Google, ChatGPT, 네이버 등 대형 사이트는 외부 접근을 차단하여 가져오기가 실패할 수 있습니다. 이 경우 해당 페이지에서 <kbd className="font-mono bg-muted px-1 rounded text-xs">Ctrl+U</kbd>로 소스를 복사한 뒤 HTML 업로드 탭을 이용해주세요.</p>
+                      <p className="text-amber-600 dark:text-amber-400 font-medium">⚠️ Google, ChatGPT, 네이버 등 대형 사이트는 외부 접근을 차단하여 가져오기가 실패할 수 있습니다.</p>
                     </AlertDescription>
                   </Alert>
-                  <FormField
-                    control={importForm.control}
-                    name="url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>웹사이트 URL</FormLabel>
-                        <FormControl><Input placeholder="https://example.com" type="url" {...field} /></FormControl>
-                        <FormDescription>가져올 사이트의 전체 URL을 입력하세요.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={importForm.control} name="url" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>웹사이트 URL</FormLabel>
+                      <FormControl><Input placeholder="https://example.com" type="url" {...field} /></FormControl>
+                      <FormDescription>가져올 사이트의 전체 URL을 입력하세요.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderNameField(importForm, "input-import-name")}
-                    <FormField
-                      control={importForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>제목</FormLabel>
-                          <FormControl><Input placeholder="가져온 사이트 이름" {...field} /></FormControl>
-                          <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={importForm.control}
-                    name="description"
-                    render={({ field }) => (
+                    <FormField control={importForm.control} name="title" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>설명 (선택)</FormLabel>
-                        <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
+                        <FormLabel>제목</FormLabel>
+                        <FormControl><Input placeholder="가져온 사이트 이름" {...field} /></FormControl>
+                        <FormDescription>브라우저 탭에 표시됩니다.</FormDescription>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
+                    )} />
+                  </div>
+                  <FormField control={importForm.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>설명 (선택)</FormLabel>
+                      <FormControl><Input placeholder="사이트에 대한 간단한 설명" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="pt-4 border-t flex justify-end">
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full sm:w-auto"
-                      disabled={importSite.isPending || (nameCheck != null && !nameCheck.available)}
-                    >
-                      {importSite.isPending ? (
-                        <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />가져오는 중...</>
-                      ) : (
-                        <><Link className="w-4 h-4 mr-2" />사이트 가져오기</>
-                      )}
+                    <Button type="submit" size="lg" className="w-full sm:w-auto"
+                      disabled={importSite.isPending || (nameCheck != null && !nameCheck.available)}>
+                      {importSite.isPending
+                        ? <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />가져오는 중...</>
+                        : <><Link className="w-4 h-4 mr-2" />사이트 가져오기</>}
                     </Button>
                   </div>
                 </form>
@@ -497,45 +474,30 @@ export default function CreateSite() {
                   </Alert>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderNameField(generateForm, "input-generate-name")}
-                    <FormField
-                      control={generateForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>제목</FormLabel>
-                          <FormControl><Input placeholder="유나의 포트폴리오" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={generateForm.control}
-                    name="description"
-                    render={({ field }) => (
+                    <FormField control={generateForm.control} name="title" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>사이트 설명</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder={"예: 사진작가 유나의 포트폴리오 사이트. 다크모드, 갤러리 그리드, 연락처 포함.\n예: 이탈리안 레스토랑 랜딩 페이지. 메뉴, 위치, 예약 폼 포함.\n예: 개인 블로그. 미니멀한 디자인, 글 목록, 소개 섹션."}
-                            className="h-[180px] resize-y text-base"
-                            {...field}
-                            data-testid="input-site-prompt"
-                          />
-                        </FormControl>
-                        <FormDescription>포트폴리오, 블로그, 식당, 쇼핑몰, 회사 소개 등 — 유형을 언급하면 더 잘 맞는 레이아웃으로 생성됩니다.</FormDescription>
+                        <FormLabel>제목</FormLabel>
+                        <FormControl><Input placeholder="유나의 포트폴리오" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
+                    )} />
+                  </div>
+                  <FormField control={generateForm.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>사이트 설명</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder={"예: 사진작가 유나의 포트폴리오 사이트. 다크모드, 갤러리 그리드, 연락처 포함.\n예: 이탈리안 레스토랑 랜딩 페이지. 메뉴, 위치, 예약 폼 포함.\n예: 개인 블로그. 미니멀한 디자인, 글 목록, 소개 섹션."}
+                          className="h-[180px] resize-y text-base" {...field} data-testid="input-site-prompt"
+                        />
+                      </FormControl>
+                      <FormDescription>포트폴리오, 블로그, 식당, 쇼핑몰, 회사 소개 등 — 유형을 언급하면 더 잘 맞는 레이아웃으로 생성됩니다.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="pt-4 border-t flex justify-end">
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full sm:w-auto overflow-hidden relative group"
-                      disabled={generateSite.isPending || (nameCheck != null && !nameCheck.available)}
-                      data-testid="button-submit-generate"
-                    >
+                    <Button type="submit" size="lg" className="w-full sm:w-auto overflow-hidden relative group"
+                      disabled={generateSite.isPending || (nameCheck != null && !nameCheck.available)} data-testid="button-submit-generate">
                       {generateSite.isPending ? (
                         <><div className="w-4 h-4 mr-2 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />생성 중...</>
                       ) : (
@@ -553,6 +515,9 @@ export default function CreateSite() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <PaymentDialog open={paymentOpen} onOpenChange={setPaymentOpen} />
+      <MyPaymentsDialog open={myPaymentsOpen} onOpenChange={setMyPaymentsOpen} />
     </Layout>
   );
 }
