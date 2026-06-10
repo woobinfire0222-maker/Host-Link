@@ -90,33 +90,42 @@ class BotManager {
     this.states.set(botId, state);
     this.recentLogs.delete(botId);
 
+    const pkgDir = path.join(workDir, ".packages");
     try {
       const reqFile = path.join(workDir, "requirements.txt");
       if (existsSync(reqFile)) {
         this.addLog(botId, "📦 requirements.txt 설치 중...");
         await new Promise<void>((resolve) => {
-          const pip = spawn("python3", ["-m", "pip", "install", "-r", reqFile, "--quiet"], { cwd: workDir });
+          const pip = spawn("python3", ["-m", "pip", "install", "-r", reqFile, "--target", pkgDir, "--quiet", "--disable-pip-version-check"], { cwd: workDir });
           pip.stdout.on("data", (d: Buffer) => {
             const text = d.toString().trim();
             if (text) this.addLog(botId, text);
           });
           pip.stderr.on("data", (d: Buffer) => {
             const text = d.toString().trim();
-            if (text) this.addLog(botId, text);
+            if (text && !text.startsWith("WARNING")) this.addLog(botId, text);
           });
           pip.on("error", (err) => {
             this.addLog(botId, `⚠️ pip 실행 오류: ${err.message}`);
             resolve();
           });
-          pip.on("close", () => resolve());
+          pip.on("close", (code) => {
+            if (code === 0) this.addLog(botId, "✅ 패키지 설치 완료");
+            else this.addLog(botId, `⚠️ pip 종료 코드: ${code}`);
+            resolve();
+          });
         });
-        this.addLog(botId, "✅ 패키지 설치 완료");
       }
     } catch (err) {
       this.addLog(botId, `⚠️ pip 설치 중 오류: ${err}`);
     }
 
-    const proc = spawn("python3", ["-u", entryFile], { cwd: workDir, env: { ...process.env, PYTHONUNBUFFERED: "1" } });
+    const existingPythonPath = process.env.PYTHONPATH ?? "";
+    const pythonPath = existingPythonPath ? `${pkgDir}:${existingPythonPath}` : pkgDir;
+    const proc = spawn("python3", ["-u", entryFile], {
+      cwd: workDir,
+      env: { ...process.env, PYTHONUNBUFFERED: "1", PYTHONPATH: pythonPath },
+    });
     state.process = proc;
 
     this.addLog(botId, `🚀 봇 시작: python3 ${entryFile} (PID: ${proc.pid})`);
