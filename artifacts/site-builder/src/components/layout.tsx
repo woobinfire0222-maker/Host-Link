@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Zap, Plus, Layers, LogOut, LogIn, ShieldCheck } from "lucide-react";
+import { Plus, Layers, LogOut, LogIn, ShieldCheck, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,26 +25,34 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col w-full bg-background selection:bg-primary/20">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
-          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80 group" data-testid="link-home">
-            <div className="bg-primary text-primary-foreground p-1.5 rounded-md shadow-sm group-hover:scale-105 transition-transform">
-              <Zap className="w-5 h-5 fill-current" />
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80" data-testid="link-home">
+            <img src="/logo-icon-black.png" alt="Host Link" className="h-8 w-8 dark:hidden" />
+            <img src="/logo-icon-white.png" alt="Host Link" className="h-8 w-8 hidden dark:block" />
+            <div className="flex flex-col leading-none">
+              <span className="font-black text-base tracking-widest uppercase">Host Link</span>
+              <span className="text-[10px] text-muted-foreground tracking-wider">호스트 링크</span>
             </div>
-            <span className="font-bold text-lg tracking-tight">SiteDrop</span>
           </Link>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1">
             {user && (
               <>
                 <Link href="/" data-testid="link-dashboard">
                   <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="font-medium">
-                    <Layers className="w-4 h-4 mr-2" />
+                    <Layers className="w-4 h-4 mr-1.5" />
                     대시보드
                   </Button>
                 </Link>
+                <Link href="/bots" data-testid="link-bots">
+                  <Button variant={location.startsWith("/bots") ? "secondary" : "ghost"} size="sm" className="font-medium">
+                    <Bot className="w-4 h-4 mr-1.5" />
+                    봇 호스팅
+                  </Button>
+                </Link>
                 <Link href="/create" data-testid="link-create">
-                  <Button size="sm" className="font-medium shadow-sm" variant={location === "/create" ? "secondary" : "default"}>
+                  <Button size="sm" className="font-medium shadow-sm ml-1" variant={location === "/create" ? "secondary" : "default"}>
                     <Plus className="w-4 h-4 mr-1" />
-                    새 사이트
+                    새로 만들기
                   </Button>
                 </Link>
               </>
@@ -54,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
               user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="font-medium gap-2">
+                    <Button variant="ghost" size="sm" className="font-medium gap-2 ml-1">
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                         {user.username[0].toUpperCase()}
                       </div>
@@ -95,7 +103,11 @@ export function Layout({ children }: LayoutProps) {
       <footer className="border-t py-6 mt-auto">
         <div className="container mx-auto px-4 max-w-6xl flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-4">
-            <p>SiteDrop &copy; {new Date().getFullYear()}</p>
+            <div className="flex items-center gap-2">
+              <img src="/logo-icon-black.png" alt="" className="h-4 w-4 dark:hidden opacity-50" />
+              <img src="/logo-icon-white.png" alt="" className="h-4 w-4 hidden dark:block opacity-50" />
+              <p>Host Link &copy; {new Date().getFullYear()}</p>
+            </div>
             <Link href="/admin">
               <button className="flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
                 <ShieldCheck className="w-3 h-3" />

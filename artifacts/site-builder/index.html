@@ -1,20 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <script>(function(){var IDS=['replit-pill','replit-badge-container','replit-badge','replit-dev-banner'];var SEL='#replit-pill,#replit-badge-container,#replit-badge,#replit-dev-banner,.replit-badge,[data-replit-badge],[data-state="brand"],[data-state="cta"],iframe[src*="replit.com/badge"],iframe[src*="replit.com/pill"],[class*="replit-badge"],[id*="replit"]';function nukeRoot(root){if(!root)return;IDS.forEach(function(id){var e=root.getElementById?root.getElementById(id):null;if(e)e.remove();});try{root.querySelectorAll(SEL).forEach(function(e){e.remove();});}catch(ex){}}function nuke(){nukeRoot(document);try{document.querySelectorAll('*').forEach(function(el){try{if(el.shadowRoot)nukeRoot(el.shadowRoot);}catch(ex){}});}catch(ex){}}var _ce=document.createElement.bind(document);document.createElement=function(t){var el=_ce(t);var origSetAttr=el.setAttribute.bind(el);el.setAttribute=function(k,v){if(k==='id'&&IDS.indexOf(v)!==-1){setTimeout(function(){if(el.parentNode)el.remove();},0);}return origSetAttr(k,v);};return el;};['appendChild','insertBefore','append','insertAdjacentElement'].forEach(function(m){var orig=Element.prototype[m];if(orig)Element.prototype[m]=function(){var r=orig.apply(this,arguments);nuke();return r;};});var origIH=Element.prototype.insertAdjacentHTML;if(origIH)Element.prototype.insertAdjacentHTML=function(){var r=origIH.apply(this,arguments);nuke();return r;};new MutationObserver(function(){nuke();}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['id','class','src','data-state','data-replit-badge']});(function loop(){nuke();requestAnimationFrame(loop);})();setInterval(nuke,100);}());</script>
     <style>#replit-pill,#replit-badge-container,#replit-badge,#replit-dev-banner,.replit-badge,[data-replit-badge],iframe[src*="replit.com/badge"],iframe[src*="replit.com/pill"],[class*="replit-badge"],[id*="replit"]{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;position:fixed!important;top:-9999px!important;left:-9999px!important;width:0!important;height:0!important;overflow:hidden!important;}</style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>SiteDrop - HTML 사이트 호스팅</title>
-    <meta name="description" content="HTML 파일을 업로드하면 즉시 고유 링크로 접속 가능한 사이트 호스팅 플랫폼." />
+    <title>Host Link - 호스트 링크</title>
+    <meta name="description" content="사이트 호스팅과 디스코드 봇 호스팅을 한 곳에서. Host Link로 시작하세요." />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="SiteDrop - HTML 사이트 호스팅" />
-    <meta property="og:description" content="HTML 파일을 업로드하면 즉시 고유 링크로 접속 가능한 사이트 호스팅 플랫폼." />
+    <meta property="og:title" content="Host Link - 호스트 링크" />
+    <meta property="og:description" content="사이트 호스팅과 디스코드 봇 호스팅을 한 곳에서." />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="SiteDrop - HTML 사이트 호스팅" />
-    <meta name="twitter:description" content="HTML 파일을 업로드하면 즉시 고유 링크로 접속 가능한 사이트 호스팅 플랫폼." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo-icon-black.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

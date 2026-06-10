@@ -83,15 +83,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <svg className="w-5 h-5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <span className="text-2xl font-bold tracking-tight">SiteDrop</span>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <img src="/logo-icon-black.png" alt="Host Link" className="h-12 w-12" />
           </div>
-          <p className="text-muted-foreground text-sm">계정으로 사이트를 관리하세요</p>
+          <div className="flex flex-col items-center leading-none mb-1">
+            <span className="text-2xl font-black tracking-widest uppercase">Host Link</span>
+            <span className="text-xs text-muted-foreground tracking-wider mt-0.5">호스트 링크</span>
+          </div>
+          <p className="text-muted-foreground text-sm mt-2">사이트 &amp; 봇 호스팅 플랫폼</p>
         </div>
 
         <div className="bg-card rounded-2xl border shadow-sm p-6">

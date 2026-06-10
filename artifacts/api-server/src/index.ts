@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { botManager } from "./lib/bot-manager";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,5 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  botManager.restoreRunningBots().catch((e) => logger.warn({ e }, "Bot restore error"));
 });

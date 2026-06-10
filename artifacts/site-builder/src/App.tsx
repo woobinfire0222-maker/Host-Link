@@ -8,6 +8,8 @@ import CreateSite from "@/pages/create";
 import SiteDetail from "@/pages/site-detail";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
+import Bots from "@/pages/bots";
+import BotDetail from "@/pages/bot-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/create" component={CreateSite} />
       <Route path="/sites/:name" component={SiteDetail} />
+      <Route path="/bots" component={Bots} />
+      <Route path="/bots/:id" component={BotDetail} />
       <Route component={NotFound} />
     </Switch>
   );

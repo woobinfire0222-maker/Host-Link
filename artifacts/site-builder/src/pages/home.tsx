@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Copy, Check, ExternalLink, Globe, Server, Activity, Plus, FileCode2 } from "lucide-react";
+import { Copy, Check, ExternalLink, Globe, Server, Activity, Plus, FileCode2, Bot, ArrowRight } from "lucide-react";
 import { useGetSiteStats, useListSites, getListSitesQueryKey, getGetSiteStatsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +50,7 @@ export default function Home() {
         <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-4">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">대시보드</h1>
-            <p className="text-muted-foreground text-lg">배포된 사이트를 관리하세요.</p>
+            <p className="text-muted-foreground text-lg">사이트와 봇을 한 곳에서 관리하세요.</p>
           </div>
           
           <div className="flex gap-3">
@@ -62,6 +62,37 @@ export default function Home() {
             </Link>
           </div>
         </section>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          <Link href="/create">
+            <div className="group flex items-center justify-between p-5 border rounded-xl bg-card hover:border-primary/40 hover:shadow-md transition-all cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">사이트 호스팅</p>
+                  <p className="text-xs text-muted-foreground">HTML 업로드 또는 AI 생성</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors group-hover:translate-x-1 transform transition-transform" />
+            </div>
+          </Link>
+          <Link href="/bots">
+            <div className="group flex items-center justify-between p-5 border rounded-xl bg-card hover:border-primary/40 hover:shadow-md transition-all cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">봇 호스팅</p>
+                  <p className="text-xs text-muted-foreground">디스코드 봇 24/7 실행</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors group-hover:translate-x-1 transform transition-transform" />
+            </div>
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-card shadow-sm border-border/50">
