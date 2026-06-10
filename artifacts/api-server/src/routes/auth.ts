@@ -41,7 +41,7 @@ router.post("/auth/register", async (req: Request, res: Response, next: NextFunc
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    res.status(201).json({ id: user.id, username: user.username, email: user.email });
+    res.status(201).json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin ?? false });
   } catch (err) {
     next(err);
   }

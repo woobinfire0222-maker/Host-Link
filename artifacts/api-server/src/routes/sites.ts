@@ -101,19 +101,28 @@ router.post("/sites/import", async (req, res): Promise<void> => {
     });
     clearTimeout(timeout);
     if (!response.ok) {
-      res.status(400).json({ error: `URL 요청 실패: HTTP ${response.status}` });
+      const statusMsg =
+        response.status === 403 ? "이 사이트는 외부 접근을 차단합니다. HTML을 직접 복사해서 붙여넣기 해주세요." :
+        response.status === 404 ? "해당 URL의 페이지를 찾을 수 없습니다 (404)." :
+        response.status === 401 || response.status === 429 ? "이 사이트는 자동 접근을 차단합니다. HTML을 직접 복사해서 붙여넣기 해주세요." :
+        `URL 요청 실패 (HTTP ${response.status}). 직접 HTML을 업로드해 주세요.`;
+      res.status(400).json({ error: statusMsg });
       return;
     }
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html") && !contentType.includes("text/plain") && !contentType.includes("application/xhtml")) {
-      res.status(400).json({ error: "HTML 페이지만 가져올 수 있습니다" });
+      res.status(400).json({ error: "HTML 페이지가 아닙니다. HTML 파일을 직접 업로드해 주세요." });
       return;
     }
     htmlContent = await response.text();
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const isAbort = err instanceof Error && err.name === "AbortError";
     req.log.warn({ err, fetchUrl }, "URL fetch failed");
-    res.status(400).json({ error: `URL을 가져오지 못했습니다: ${msg}` });
+    res.status(400).json({
+      error: isAbort
+        ? "URL 요청 시간이 초과됐습니다 (15초). 사이트가 느리거나 접근을 차단합니다. HTML을 직접 복사해서 붙여넣기 해주세요."
+        : "URL에 접근할 수 없습니다. 주소를 확인하거나 HTML을 직접 붙여넣기 해주세요.",
+    });
     return;
   }
 

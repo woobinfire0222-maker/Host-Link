@@ -421,8 +421,9 @@ export default function CreateSite() {
                   <Alert className="bg-primary/5 border-primary/20">
                     <Link className="w-4 h-4 text-primary" />
                     <AlertTitle className="text-foreground font-semibold">URL에서 사이트 가져오기</AlertTitle>
-                    <AlertDescription className="text-muted-foreground text-sm mt-1">
-                      웹사이트 URL을 입력하면 해당 페이지의 HTML을 그대로 가져와서 호스팅합니다. 공개 접근 가능한 URL이어야 합니다.
+                    <AlertDescription className="text-muted-foreground text-sm mt-1 space-y-1">
+                      <p>웹사이트 URL을 입력하면 해당 페이지의 HTML을 그대로 가져와서 호스팅합니다.</p>
+                      <p className="text-amber-600 dark:text-amber-400 font-medium">⚠️ Google, ChatGPT, 네이버 등 대형 사이트는 외부 접근을 차단하여 가져오기가 실패할 수 있습니다. 이 경우 해당 페이지에서 <kbd className="font-mono bg-muted px-1 rounded text-xs">Ctrl+U</kbd>로 소스를 복사한 뒤 HTML 업로드 탭을 이용해주세요.</p>
                     </AlertDescription>
                   </Alert>
                   <FormField
