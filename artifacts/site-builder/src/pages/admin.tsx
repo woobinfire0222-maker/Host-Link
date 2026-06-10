@@ -3,15 +3,19 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Users, Globe, Lock, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Trash2, Users, Globe, Lock, ShieldCheck, ArrowLeft, Bot, Play, Square } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminUser {
   id: number; username: string; email: string; isAdmin: boolean; createdAt: string;
 }
 interface AdminSite {
   id: number; name: string; title: string; description: string | null; userId: number | null; createdAt: string;
+}
+interface AdminBot {
+  id: number; name: string; description: string | null; entryFile: string; status: string; running: boolean; userId: number | null; createdAt: string;
 }
 
 const ADMIN_PASSWORD = "2434";
@@ -22,9 +26,10 @@ export default function Admin() {
   const [unlocked, setUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [wrongPass, setWrongPass] = useState(false);
-  const [tab, setTab] = useState<"users" | "sites">("users");
+  const [tab, setTab] = useState<"users" | "sites" | "bots">("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [sites, setSites] = useState<AdminSite[]>([]);
+  const [bots, setBots] = useState<AdminBot[]>([]);
   const [loading, setLoading] = useState(false);
 
   function handleUnlock(e: React.FormEvent) {
@@ -42,23 +47,26 @@ export default function Admin() {
   async function loadData() {
     setLoading(true);
     try {
-      const [uRes, sRes] = await Promise.all([
+      const [uRes, sRes, bRes] = await Promise.all([
         fetch("/api/admin/users", { credentials: "include" }),
         fetch("/api/admin/sites", { credentials: "include" }),
+        fetch("/api/admin/bots", { credentials: "include" }),
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (sRes.ok) setSites(await sRes.json());
+      if (bRes.ok) setBots(await bRes.json());
     } finally {
       setLoading(false);
     }
   }
 
   async function deleteUser(id: number, username: string) {
-    if (!confirm(`"${username}" 사용자를 삭제하시겠습니까? 해당 사용자의 사이트도 모두 삭제됩니다.`)) return;
+    if (!confirm(`"${username}" 사용자를 삭제하시겠습니까? 해당 사용자의 사이트와 봇도 모두 삭제됩니다.`)) return;
     const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", credentials: "include" });
     if (res.ok) {
       setUsers(u => u.filter(x => x.id !== id));
       setSites(s => s.filter(x => x.userId !== id));
+      setBots(b => b.filter(x => x.userId !== id));
       toast({ title: "삭제 완료", description: `${username} 사용자가 삭제됐습니다` });
     } else {
       toast({ title: "삭제 실패", variant: "destructive" });
@@ -73,6 +81,27 @@ export default function Admin() {
       toast({ title: "삭제 완료", description: `${name} 사이트가 삭제됐습니다` });
     } else {
       toast({ title: "삭제 실패", variant: "destructive" });
+    }
+  }
+
+  async function deleteBot(id: number, name: string) {
+    if (!confirm(`"${name}" 봇을 삭제하시겠습니까?`)) return;
+    const res = await fetch(`/api/admin/bots/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) {
+      setBots(b => b.filter(x => x.id !== id));
+      toast({ title: "삭제 완료", description: `${name} 봇이 삭제됐습니다` });
+    } else {
+      toast({ title: "삭제 실패", variant: "destructive" });
+    }
+  }
+
+  async function stopBot(id: number, name: string) {
+    const res = await fetch(`/api/admin/bots/${id}/stop`, { method: "POST", credentials: "include" });
+    if (res.ok) {
+      setBots(b => b.map(x => x.id === id ? { ...x, running: false, status: "stopped" } : x));
+      toast({ title: `${name} 봇이 중지됐습니다` });
+    } else {
+      toast({ title: "중지 실패", variant: "destructive" });
     }
   }
 
@@ -113,6 +142,8 @@ export default function Admin() {
     return u ? <span className="font-medium">@{u.username}</span> : <span className="text-muted-foreground text-xs">ID:{id}</span>;
   };
 
+  const runningBots = bots.filter(b => b.running).length;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card px-6 py-4 flex items-center justify-between">
@@ -130,7 +161,7 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto p-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-card border rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-500" />
@@ -149,6 +180,15 @@ export default function Admin() {
               <div className="text-muted-foreground text-xs">전체 사이트</div>
             </div>
           </div>
+          <div className="bg-card border rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{bots.length}</div>
+              <div className="text-muted-foreground text-xs">전체 봇 <span className="text-green-500">({runningBots} 실행중)</span></div>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -158,6 +198,9 @@ export default function Admin() {
           </Button>
           <Button variant={tab === "sites" ? "default" : "ghost"} size="sm" onClick={() => setTab("sites")}>
             <Globe className="w-4 h-4 mr-2" /> 사이트 관리
+          </Button>
+          <Button variant={tab === "bots" ? "default" : "ghost"} size="sm" onClick={() => setTab("bots")}>
+            <Bot className="w-4 h-4 mr-2" /> 봇 관리
           </Button>
         </div>
 
@@ -177,7 +220,7 @@ export default function Admin() {
                     {u.email} · {format(new Date(u.createdAt), "yyyy.MM.dd", { locale: ko })} 가입
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    사이트 {sites.filter(s => s.userId === u.id).length}개
+                    사이트 {sites.filter(s => s.userId === u.id).length}개 · 봇 {bots.filter(b => b.userId === u.id).length}개
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -187,7 +230,7 @@ export default function Admin() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : tab === "sites" ? (
           <div className="space-y-2">
             {sites.length === 0 && <div className="text-center py-12 text-muted-foreground">등록된 사이트가 없습니다</div>}
             {sites.map(s => (
@@ -205,6 +248,39 @@ export default function Admin() {
                   </Button>
                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => deleteSite(s.name)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {bots.length === 0 && <div className="text-center py-12 text-muted-foreground">등록된 봇이 없습니다</div>}
+            {bots.map(b => (
+              <div key={b.id} className="bg-card border rounded-xl px-4 py-3 flex items-center justify-between">
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Bot className="w-4 h-4 text-primary" />
+                    {b.name}
+                    <Badge variant={b.running ? "default" : "secondary"} className={b.running ? "bg-green-500 text-white text-xs" : "text-xs"}>
+                      {b.running ? "실행 중" : "중지됨"}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground text-xs mt-0.5">
+                    {getUsernameById(b.userId)} · 진입점: {b.entryFile} · {format(new Date(b.createdAt), "yyyy.MM.dd", { locale: ko })}
+                  </div>
+                  {b.description && <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{b.description}</div>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {b.running && (
+                    <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 text-xs"
+                      onClick={() => stopBot(b.id, b.name)}>
+                      <Square className="w-3 h-3 mr-1" /> 중지
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => deleteBot(b.id, b.name)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
