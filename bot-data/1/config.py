@@ -1,0 +1,3 @@
+TOKEN = "MTUwMDg2Mzc4NDkwMDc1NTY1OA.GXJAPb.VvPPmrqgT-A_YB2lSYw_fJsrS5E1bJnr8ud_Oo"
+SUPABASE_URL = "https://wxdmvwzcalmnsmuundbv.supabase.co/rest/v1/"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4ZG12d3pjYWxtbnNtdXVuZGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjYzOTksImV4cCI6MjA5MzUwMjM5OX0.wTYefQvtdI_3SVvXebcN_pN9dFhMFcQRfubucurN_wU"

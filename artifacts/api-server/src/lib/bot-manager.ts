@@ -18,6 +18,7 @@ interface BotState {
 
 class BotManager {
   private states = new Map<number, BotState>();
+  private recentLogs = new Map<number, string[]>();
 
   getBotDir(botId: number): string {
     const dir = path.join(BOT_DATA_DIR, String(botId));
@@ -30,7 +31,7 @@ class BotManager {
   }
 
   getLogs(botId: number): string[] {
-    return this.states.get(botId)?.logs ?? [];
+    return this.states.get(botId)?.logs ?? this.recentLogs.get(botId) ?? [];
   }
 
   addLog(botId: number, line: string) {
@@ -59,7 +60,15 @@ class BotManager {
         } catch { break; }
       }
     } else {
-      res.write(`data: ${JSON.stringify({ line: "[봇이 실행 중이 아닙니다]" })}\n\n`);
+      const recent = this.recentLogs.get(botId) ?? [];
+      for (const log of recent) {
+        try {
+          res.write(`data: ${JSON.stringify({ line: log })}\n\n`);
+        } catch { break; }
+      }
+      try {
+        res.write(`data: ${JSON.stringify({ line: recent.length ? "--- 봇이 종료됐습니다 ---" : "[봇이 실행 중이 아닙니다]", closed: true })}\n\n`);
+      } catch {}
     }
   }
 
@@ -79,15 +88,26 @@ class BotManager {
 
     const state: BotState = { process: null as any, logs: [], clients: new Set(), startedAt: new Date() };
     this.states.set(botId, state);
+    this.recentLogs.delete(botId);
 
     try {
       const reqFile = path.join(workDir, "requirements.txt");
       if (existsSync(reqFile)) {
         this.addLog(botId, "📦 requirements.txt 설치 중...");
         await new Promise<void>((resolve) => {
-          const pip = spawn("pip3", ["install", "-r", reqFile], { cwd: workDir });
-          pip.stdout.on("data", (d: Buffer) => this.addLog(botId, d.toString().trim()));
-          pip.stderr.on("data", (d: Buffer) => this.addLog(botId, d.toString().trim()));
+          const pip = spawn("python3", ["-m", "pip", "install", "-r", reqFile, "--quiet"], { cwd: workDir });
+          pip.stdout.on("data", (d: Buffer) => {
+            const text = d.toString().trim();
+            if (text) this.addLog(botId, text);
+          });
+          pip.stderr.on("data", (d: Buffer) => {
+            const text = d.toString().trim();
+            if (text) this.addLog(botId, text);
+          });
+          pip.on("error", (err) => {
+            this.addLog(botId, `⚠️ pip 실행 오류: ${err.message}`);
+            resolve();
+          });
           pip.on("close", () => resolve());
         });
         this.addLog(botId, "✅ 패키지 설치 완료");
@@ -96,10 +116,14 @@ class BotManager {
       this.addLog(botId, `⚠️ pip 설치 중 오류: ${err}`);
     }
 
-    const proc = spawn("python3", ["-u", entryFile], { cwd: workDir, env: { ...process.env } });
+    const proc = spawn("python3", ["-u", entryFile], { cwd: workDir, env: { ...process.env, PYTHONUNBUFFERED: "1" } });
     state.process = proc;
 
     this.addLog(botId, `🚀 봇 시작: python3 ${entryFile} (PID: ${proc.pid})`);
+
+    proc.on("error", (err) => {
+      this.addLog(botId, `💥 프로세스 오류: ${err.message}`);
+    });
 
     proc.stdout.on("data", (data: Buffer) => {
       const lines = data.toString().split("\n").filter((l) => l.trim());
@@ -113,6 +137,7 @@ class BotManager {
 
     proc.on("close", async (code) => {
       this.addLog(botId, `\n🔴 봇 종료 (종료 코드: ${code ?? "N/A"})`);
+      this.recentLogs.set(botId, [...state.logs]);
       for (const client of state.clients) {
         try { client.write(`data: ${JSON.stringify({ line: "[연결 종료]", closed: true })}\n\n`); } catch {}
       }
@@ -122,10 +147,6 @@ class BotManager {
       } catch {}
     });
 
-    proc.on("error", (err) => {
-      this.addLog(botId, `💥 프로세스 오류: ${err.message}`);
-    });
-
     await db.update(botsTable).set({ status: "running" }).where(eq(botsTable.id, botId));
     logger.info({ botId, pid: proc.pid }, "Bot started");
     return { ok: true };
@@ -133,7 +154,7 @@ class BotManager {
 
   async stop(botId: number): Promise<{ ok: boolean; error?: string }> {
     const state = this.states.get(botId);
-    if (!state) return { ok: false, error: "실행 중이 아닙니다" };
+    if (!state) return { ok: true };
     this.addLog(botId, "🛑 중지 요청...");
     state.process.kill("SIGTERM");
     setTimeout(() => {

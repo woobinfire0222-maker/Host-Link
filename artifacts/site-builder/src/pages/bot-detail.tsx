@@ -143,9 +143,13 @@ export default function BotDetail() {
     es.onmessage = (e) => {
       const { line, closed } = JSON.parse(e.data);
       setLogs((prev) => [...prev.slice(-499), line]);
-      if (closed) { setRunning(false); }
+      if (closed) {
+        setRunning(false);
+        es.close();
+        sseRef.current = null;
+      }
     };
-    es.onerror = () => { };
+    es.onerror = () => {};
     sseRef.current = es;
   }, [botId]);
 
@@ -222,8 +226,8 @@ export default function BotDetail() {
   }, [user, botId]);
 
   useEffect(() => {
-    if (running && botId) connectSSE();
-  }, [running, botId]);
+    if (running && botId && !sseRef.current) connectSSE();
+  }, [running, botId, connectSSE]);
 
   if (isAuthLoading || !user || !bot) {
     return (
