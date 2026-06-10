@@ -83,14 +83,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <img src="/logo-icon-black.png" alt="Host Link" className="h-12 w-12" />
+          <div className="flex flex-col items-center gap-2">
+            <img src="/hl-icon-dark.png" alt="Host Link" className="h-24 w-24 dark:hidden" />
+            <img src="/hl-icon-white.png" alt="Host Link" className="h-24 w-24 hidden dark:block" />
+            <span className="text-xs font-bold tracking-[0.3em] uppercase text-muted-foreground">Host Link</span>
           </div>
-          <div className="flex flex-col items-center leading-none mb-1">
-            <span className="text-2xl font-black tracking-widest uppercase">Host Link</span>
-            <span className="text-xs text-muted-foreground tracking-wider mt-0.5">호스트 링크</span>
-          </div>
-          <p className="text-muted-foreground text-sm mt-2">사이트 &amp; 봇 호스팅 플랫폼</p>
         </div>
 
         <div className="bg-card rounded-2xl border shadow-sm p-6">
