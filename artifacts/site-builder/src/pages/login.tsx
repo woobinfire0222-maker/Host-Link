@@ -86,7 +86,7 @@ export default function Login() {
           <div className="flex flex-col items-center gap-2">
             <img src="/hl-icon-dark.png" alt="Host Link" className="h-40 w-40 dark:hidden" />
             <img src="/hl-icon-white.png" alt="Host Link" className="h-40 w-40 hidden dark:block" />
-            <span className="text-xs font-bold tracking-[0.3em] uppercase text-muted-foreground">Host Link</span>
+            <span className="text-lg font-bold tracking-[0.3em] uppercase text-foreground">Host Link</span>
           </div>
         </div>
 
