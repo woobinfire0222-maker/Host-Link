@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { Bot, Plus, Play, Square, Trash2, Clock, AlertCircle } from "lucide-react";
+import { Link, useLocation, useSearch } from "wouter";
+import { Bot, Plus, Play, Trash2, Clock } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface BotInfo {
   id: number;
@@ -32,8 +33,11 @@ async function apiFetch(url: string, opts?: RequestInit) {
   return res.json();
 }
 
+type Language = "python" | "javascript";
+
 export default function Bots() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { user, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const [bots, setBots] = useState<BotInfo[]>([]);
@@ -41,6 +45,7 @@ export default function Bots() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [language, setLanguage] = useState<Language>("python");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -62,6 +67,13 @@ export default function Bots() {
     if (user) loadBots();
   }, [user]);
 
+  useEffect(() => {
+    if (user && new URLSearchParams(search).get("new") === "1") {
+      setCreateOpen(true);
+      setLocation("/bots", { replace: true });
+    }
+  }, [user, search]);
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setCreating(true);
@@ -69,7 +81,7 @@ export default function Bots() {
       const bot = await apiFetch("/api/bots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim(), description: newDesc.trim() }),
+        body: JSON.stringify({ name: newName.trim(), description: newDesc.trim(), language }),
       });
       setCreateOpen(false);
       setNewName("");
@@ -209,8 +221,48 @@ export default function Bots() {
                 onChange={(e) => setNewDesc(e.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>언어 선택</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLanguage("python")}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
+                    language === "python"
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-border hover:border-border/80 hover:bg-muted/50"
+                  )}
+                >
+                  <span className="text-2xl">🐍</span>
+                  <div>
+                    <div className="font-semibold text-sm">Python</div>
+                    <div className="text-xs text-muted-foreground">discord.py</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("javascript")}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
+                    language === "javascript"
+                      ? "border-yellow-500 bg-yellow-500/10"
+                      : "border-border hover:border-border/80 hover:bg-muted/50"
+                  )}
+                >
+                  <span className="text-2xl">🟨</span>
+                  <div>
+                    <div className="font-semibold text-sm">JavaScript</div>
+                    <div className="text-xs text-muted-foreground">discord.js</div>
+                  </div>
+                </button>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">
-              생성 시 <code className="bg-muted px-1 rounded">bot.py</code>와 <code className="bg-muted px-1 rounded">requirements.txt</code> 기본 파일이 자동으로 만들어집니다.
+              {language === "python"
+                ? <>생성 시 <code className="bg-muted px-1 rounded">bot.py</code>와 <code className="bg-muted px-1 rounded">requirements.txt</code> 파일이 만들어집니다.</>
+                : <>생성 시 <code className="bg-muted px-1 rounded">bot.js</code>와 <code className="bg-muted px-1 rounded">package.json</code> 파일이 만들어집니다.</>
+              }
             </p>
           </div>
           <DialogFooter>

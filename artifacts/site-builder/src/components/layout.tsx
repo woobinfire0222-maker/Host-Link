@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Layers, LogOut, LogIn, ShieldCheck, Bot, Globe } from "lucide-react";
+import { Plus, Layers, LogOut, LogIn, ShieldCheck, Bot, Globe, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHealthCheck, getHealthCheckQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,12 +55,25 @@ export function Layout({ children }: LayoutProps) {
                     봇 호스팅
                   </Button>
                 </Link>
-                <Link href="/create" data-testid="link-create">
-                  <Button size="sm" className="font-medium shadow-sm ml-1" variant={location === "/create" ? "secondary" : "default"}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    새로 만들기
-                  </Button>
-                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="font-medium shadow-sm ml-1" variant="default">
+                      <Plus className="w-4 h-4 mr-1" />
+                      새로 만들기
+                      <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setLocation("/create")} className="cursor-pointer gap-2">
+                      <Globe className="w-4 h-4 text-blue-500" />
+                      사이트 만들기
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/bots?new=1")} className="cursor-pointer gap-2">
+                      <Bot className="w-4 h-4 text-purple-500" />
+                      봇 만들기
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
 

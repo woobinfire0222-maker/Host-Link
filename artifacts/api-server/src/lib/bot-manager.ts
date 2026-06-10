@@ -90,8 +90,35 @@ class BotManager {
     this.states.set(botId, state);
     this.recentLogs.delete(botId);
 
-    const pkgDir = path.join(workDir, ".packages");
-    try {
+    const isJS = entryFile.endsWith(".js");
+
+    if (isJS) {
+      const pkgJson = path.join(workDir, "package.json");
+      if (existsSync(pkgJson)) {
+        this.addLog(botId, "📦 package.json 설치 중 (npm install)...");
+        await new Promise<void>((resolve) => {
+          const npm = spawn("npm", ["install", "--prefer-offline"], { cwd: workDir });
+          npm.stdout.on("data", (d: Buffer) => {
+            const text = d.toString().trim();
+            if (text) this.addLog(botId, text);
+          });
+          npm.stderr.on("data", (d: Buffer) => {
+            const text = d.toString().trim();
+            if (text && !text.startsWith("npm warn")) this.addLog(botId, text);
+          });
+          npm.on("error", (err) => {
+            this.addLog(botId, `⚠️ npm 실행 오류: ${err.message}`);
+            resolve();
+          });
+          npm.on("close", (code) => {
+            if (code === 0) this.addLog(botId, "✅ 패키지 설치 완료");
+            else this.addLog(botId, `⚠️ npm 종료 코드: ${code}`);
+            resolve();
+          });
+        });
+      }
+    } else {
+      const pkgDir = path.join(workDir, ".packages");
       const reqFile = path.join(workDir, "requirements.txt");
       if (existsSync(reqFile)) {
         this.addLog(botId, "📦 requirements.txt 설치 중...");
@@ -116,19 +143,25 @@ class BotManager {
           });
         });
       }
-    } catch (err) {
-      this.addLog(botId, `⚠️ pip 설치 중 오류: ${err}`);
     }
 
-    const existingPythonPath = process.env.PYTHONPATH ?? "";
-    const pythonPath = existingPythonPath ? `${pkgDir}:${existingPythonPath}` : pkgDir;
-    const proc = spawn("python3", ["-u", entryFile], {
-      cwd: workDir,
-      env: { ...process.env, PYTHONUNBUFFERED: "1", PYTHONPATH: pythonPath },
-    });
+    const isJSBot = entryFile.endsWith(".js");
+    let proc;
+    if (isJSBot) {
+      proc = spawn("node", [entryFile], { cwd: workDir, env: { ...process.env } });
+    } else {
+      const pkgDir = path.join(workDir, ".packages");
+      const existingPythonPath = process.env.PYTHONPATH ?? "";
+      const pythonPath = existingPythonPath ? `${pkgDir}:${existingPythonPath}` : pkgDir;
+      proc = spawn("python3", ["-u", entryFile], {
+        cwd: workDir,
+        env: { ...process.env, PYTHONUNBUFFERED: "1", PYTHONPATH: pythonPath },
+      });
+    }
     state.process = proc;
 
-    this.addLog(botId, `🚀 봇 시작: python3 ${entryFile} (PID: ${proc.pid})`);
+    const runtime = entryFile.endsWith(".js") ? "node" : "python3";
+    this.addLog(botId, `🚀 봇 시작: ${runtime} ${entryFile} (PID: ${proc.pid})`);
 
     proc.on("error", (err) => {
       this.addLog(botId, `💥 프로세스 오류: ${err.message}`);

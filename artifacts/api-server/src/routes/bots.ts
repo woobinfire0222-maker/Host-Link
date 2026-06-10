@@ -42,17 +42,54 @@ router.get("/bots", async (req, res): Promise<void> => {
 
 router.post("/bots", async (req, res): Promise<void> => {
   if (!requireAuth(req, res)) return;
-  const { name, description, entryFile } = req.body as Record<string, string>;
+  const { name, description, language } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "봇 이름을 입력해주세요" }); return; }
+  const isJS = language === "javascript";
+  const entryFile = isJS ? "bot.js" : "bot.py";
   const [bot] = await db.insert(botsTable).values({
     userId: req.session!.userId!,
     name: name.trim(),
     description: description?.trim() ?? null,
-    entryFile: entryFile?.trim() || "bot.py",
+    entryFile,
     status: "stopped",
   }).returning();
   const dir = botManager.getBotDir(bot.id);
-  const defaultCode = `import discord
+  if (isJS) {
+    writeFileSync(path.join(dir, "bot.js"), `const { Client, GatewayIntentBits } = require('discord.js');
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
+
+client.once('ready', () => {
+  console.log(\`✅ \${client.user.tag} 봇이 온라인입니다!\`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+  if (message.content === '!ping') {
+    await message.reply(\`🏓 Pong! 지연: \${Math.round(client.ws.ping)}ms\`);
+  }
+  if (message.content === '!hello') {
+    await message.reply(\`안녕하세요, \${message.author}!\`);
+  }
+});
+
+// 봇 토큰을 환경변수나 아래에 직접 입력하세요
+client.login(process.env.DISCORD_TOKEN || 'YOUR_BOT_TOKEN_HERE');
+`, "utf-8");
+    writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+      name: name.trim().toLowerCase().replace(/\s+/g, "-"),
+      version: "1.0.0",
+      main: "bot.js",
+      dependencies: { "discord.js": "^14.0.0" },
+    }, null, 2), "utf-8");
+  } else {
+    writeFileSync(path.join(dir, "bot.py"), `import discord
 from discord.ext import commands
 import os
 
@@ -75,9 +112,9 @@ async def hello(ctx):
 
 # 봇 토큰을 환경변수나 아래에 직접 입력하세요
 bot.run(os.environ.get('DISCORD_TOKEN', 'YOUR_BOT_TOKEN_HERE'))
-`;
-  writeFileSync(path.join(dir, bot.entryFile), defaultCode, "utf-8");
-  writeFileSync(path.join(dir, "requirements.txt"), "discord.py>=2.0\n", "utf-8");
+`, "utf-8");
+    writeFileSync(path.join(dir, "requirements.txt"), "discord.py>=2.0\n", "utf-8");
+  }
   res.status(201).json({ ...bot, running: false });
 });
 
