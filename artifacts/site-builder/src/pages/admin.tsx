@@ -127,7 +127,7 @@ export default function Admin() {
     if (!chatMsg.trim() || !selectedPayment) return;
     setSendingChat(true);
     try {
-      const res = await fetch(`/api/payments/${selectedPayment}/messages`, {
+      const res = await fetch(`/api/admin/payments/${selectedPayment}/messages`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: chatMsg.trim() }),

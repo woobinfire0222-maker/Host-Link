@@ -114,6 +114,27 @@ router.post("/payments/:id/messages", async (req, res): Promise<void> => {
 
 // ── Admin routes ──────────────────────────────────────────
 
+// Admin: send a message on any payment request — always marks isAdmin: true
+router.post("/admin/payments/:id/messages", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string);
+  if (isNaN(id)) { res.status(400).json({ error: "잘못된 ID" }); return; }
+
+  const { message } = req.body as { message: string };
+  if (!message?.trim()) { res.status(400).json({ error: "메시지를 입력해주세요" }); return; }
+
+  const [request] = await db.select().from(paymentRequestsTable)
+    .where(eq(paymentRequestsTable.id, id)).limit(1);
+  if (!request) { res.status(404).json({ error: "결제 요청을 찾을 수 없습니다" }); return; }
+
+  const [msg] = await db.insert(paymentMessagesTable).values({
+    requestId: id,
+    isAdmin: true,
+    message: message.trim(),
+  }).returning();
+
+  res.status(201).json(msg);
+});
+
 // Get all payment requests
 router.get("/admin/payments", requireAdmin, async (req, res): Promise<void> => {
   const requests = await db
@@ -138,7 +159,7 @@ router.get("/admin/payments", requireAdmin, async (req, res): Promise<void> => {
 
 // Approve a payment request
 router.post("/admin/payments/:id/approve", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "잘못된 ID" }); return; }
 
   const [request] = await db.select().from(paymentRequestsTable)
@@ -187,7 +208,7 @@ router.post("/admin/payments/:id/approve", requireAdmin, async (req, res): Promi
 
 // Reject a payment request
 router.post("/admin/payments/:id/reject", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) { res.status(400).json({ error: "잘못된 ID" }); return; }
 
   const [request] = await db.select().from(paymentRequestsTable)
