@@ -1,0 +1,34 @@
+databases:
+  - name: hostlink-db
+    databaseName: hostlink
+    user: hostlink
+    plan: free
+
+services:
+  - type: web
+    name: hostlink
+    runtime: node
+    plan: free
+    buildCommand: >
+      npm install -g pnpm &&
+      pnpm install --frozen-lockfile &&
+      pnpm run typecheck:libs &&
+      pnpm --filter @workspace/site-builder run build &&
+      pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hostlink-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_API_BASE
+        sync: false

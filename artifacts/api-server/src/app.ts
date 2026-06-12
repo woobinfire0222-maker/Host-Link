@@ -3,11 +3,15 @@ import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pinoHttp from "pino-http";
+import path from "path";
+import { fileURLToPath } from "url";
 import router from "./routes";
 import { createSiteViewRouter } from "./routes/sites";
 import { subdomainMiddleware } from "./lib/subdomain";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PgStore = connectPgSimple(session);
 
@@ -52,6 +56,16 @@ app.use(
 app.use(subdomainMiddleware);
 app.use("/api", router);
 app.use(createSiteViewRouter());
+
+// Production: serve React frontend static files
+if (process.env.NODE_ENV === "production") {
+  const frontendDist = path.resolve(__dirname, "../../site-builder/dist/public");
+  app.use(express.static(frontendDist));
+  // SPA fallback — any non-API/non-/s route returns index.html
+  app.get("*", (_req: Request, res: Response) => {
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+}
 
 // Global JSON error handler — must be last, after all routes
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
