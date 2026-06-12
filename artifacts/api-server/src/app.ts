@@ -58,13 +58,22 @@ app.use("/api", router);
 app.use(createSiteViewRouter());
 
 // Production: serve React frontend static files
+// Works for both Render (single-service) and Replit fallback
 if (process.env.NODE_ENV === "production") {
-  const frontendDist = path.resolve(__dirname, "../../site-builder/dist/public");
-  app.use(express.static(frontendDist));
-  // SPA fallback — any non-API/non-/s route returns index.html
-  app.get("*", (_req: Request, res: Response) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
-  });
+  // Try several possible paths depending on where the built file is run from
+  const possibleDists = [
+    path.resolve(__dirname, "../../site-builder/dist/public"),
+    path.resolve(process.cwd(), "artifacts/site-builder/dist/public"),
+  ];
+  const fs = await import("fs");
+  const frontendDist = possibleDists.find((p) => fs.existsSync(p));
+
+  if (frontendDist) {
+    app.use(express.static(frontendDist));
+    app.get("*", (_req: Request, res: Response) => {
+      res.sendFile(path.join(frontendDist, "index.html"));
+    });
+  }
 }
 
 // Global JSON error handler — must be last, after all routes
